@@ -1,8 +1,11 @@
 # -*- coding: utf-8 -*-
 from __future__ import unicode_literals
 
+from django.http import HttpResponse
 from django.shortcuts import render
+from django.urls import reverse
 from django.utils.html import mark_safe
+from django.views.decorators.csrf import csrf_exempt
 
 from common.pylightex import tex2html
 from contests.homeblock import ContestBlockFactory
@@ -34,6 +37,16 @@ def home(request):
 
 def about(request):
     return render(request, 'home/about.html', {})
+
+
+def cookie_policy(request):
+    return render(request, 'home/cookie_policy.html', {})
+
+
+@csrf_exempt
+def accept_cookie_policy(request):
+    request.session['accept_cookies'] = True
+    return HttpResponse('OK')
 
 
 def language(request):

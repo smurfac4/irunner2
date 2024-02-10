@@ -56,9 +56,24 @@
                         {% if show_about_page %}<a href="{% url 'about' %}">{% trans 'About' context 'about the system' %}</a>{% endif %}
                         <a href="{% url 'language' %}?next={% irunner_next %}">{{ language_switcher_link_text }}</a>
                         <a href="{% url 'feedback:new' %}">{% trans 'Feedback' %}</a>
+                        <a href="{% url 'cookie_policy' %}">{% trans 'Cookie policy' %}</a>
                     </div>
                 </div>
             </div>
         </footer>
+
+    {% if show_cookie_consent %}
+    <div class="alert text-center ir-cookiealert show" role="alert">
+        <b>{% trans 'iRunner does not track you.' %}</b> {% trans 'Only necessary cookies are used.' %} <a href="{% url 'cookie_policy' %}" target="_blank">{% trans 'Cookie policy' %}</a>
+        <button type="button" class="btn btn-primary btn-sm ir-acceptcookies">{% trans 'I agree' %}</button>
+    </div>
+    <script>$(document).ready(function() {
+        $(".ir-acceptcookies").click(function() {
+            $.post("{% url 'accept_cookie_policy' %}").done(function() {
+                $(".ir-cookiealert").removeClass("show");
+            });
+        });
+    });</script>
+    {% endif %}
     </body>
 </html>

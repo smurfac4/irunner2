@@ -18,5 +18,6 @@ def system_name(request):
         'external_links': settings.EXTERNAL_LINKS,
         'root_folder': ROOT,
         'location': settings.LOCATION,
-        'language_switcher_link_text': '\u2009/\u2009'.join(_language_translated(lang) for lang, _ in settings.LANGUAGES)
+        'language_switcher_link_text': '\u2009/\u2009'.join(_language_translated(lang) for lang, _ in settings.LANGUAGES),
+        'show_cookie_consent': not request.user.is_authenticated and not request.session.get('accept_cookies', False),
     }

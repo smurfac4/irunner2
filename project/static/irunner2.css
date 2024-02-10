@@ -2340,3 +2340,32 @@ Green menu
 .ir-vgtu-jumbotron p {
     color: #0b4dc7;
 }
+
+.ir-cookiealert {
+    position: fixed;
+    bottom: 0;
+    left: 0;
+    width: 100%;
+    margin: 0 !important;
+    padding: 0.75rem 1.25rem;
+    z-index: 999;
+    opacity: 0;
+    visibility: hidden;
+    border-radius: 0;
+    transform: translateY(100%);
+    transition: all 500ms ease-out;
+    color: #ecf0f1;
+    background-color: #000;
+}
+
+.ir-cookiealert.show {
+    opacity: 0.7;
+    visibility: visible;
+    transform: translateY(0%);
+    transition-delay: 1000ms;
+}
+
+.ir-cookiealert .ir-acceptcookies {
+    margin-left: 10px;
+    vertical-align: baseline;
+}
