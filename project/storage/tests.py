@@ -94,6 +94,19 @@ class FileSystemStorageTests(TestCase):
         finally:
             shutil.rmtree(dirpath)
 
+    def test_check_availability(self):
+        with tempfile.TemporaryDirectory() as dirpath:
+            fs = FileSystemStorage(os.path.join(dirpath, 'filestorage'))
+            resource_id = fs.save(ContentFile(b'a' * 100))
+            assert isinstance(resource_id, ResourceId)
+
+            small_resource_id = ResourceId(b'hello')
+            absent_resource_id = ResourceId.parse('da39a3ee5e6b4b0d3255bfef95601890afd80709')  # SHA1("")
+
+            assert fs.check_availability([]) == []
+            assert fs.check_availability([resource_id, small_resource_id, absent_resource_id]) == [True, True, False]
+            assert fs.check_availability([small_resource_id, absent_resource_id, resource_id]) == [True, False, True]
+
 
 class FilenameValidatorTests(TestCase):
     def test_good(self):

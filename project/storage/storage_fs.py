@@ -101,7 +101,7 @@ class FileSystemStorage(DataStorage):
         for resource_id in resource_ids:
             target_name = self._get_path(resource_id)
             if os.path.exists(target_name):
-                result.insert(resource_id)
+                result.add(resource_id)
         return result
 
     def list_all(self):
