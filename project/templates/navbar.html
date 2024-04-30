@@ -63,6 +63,7 @@
                                     <li><a href="{% url 'solutions:hall_of_fame' %}">{% trans 'Hall of fame' %}</a></li>
                                     <li><a href="{% url 'storage:index' %}">{% trans 'File storage' %}</a></li>
                                     <li><a href="{% url 'problems:tex_playground' %}">{% trans 'TeX editor' %}</a></li>
+                                    <li><a href="{% url 'test_sending_emails' %}">{% trans 'Test sending emails' %}</a></li>
                                 {% endif %}
                             {% endif %}
                             {% if user.is_problem_editor %}

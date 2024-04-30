@@ -1,0 +1,24 @@
+{% extends "base.html" %}
+
+{% load bootstrap3 %}
+{% load i18n %}
+{% load irunner_messagebox %}
+
+{% block content %}
+    <h1>{% trans 'Test sending emails' %}</h1>
+
+    {% bootstrap_messages %}
+    {% if exception %}
+        {% irunner_messagebox style='danger' wide=True %}
+            <samp><strong>{{ exception_type }}</strong>: {{ exception }}</samp>
+        {% irunner_endmessagebox %}
+    {% endif %}
+
+    <form method="post">
+        {% csrf_token %}
+        {% bootstrap_form form %}
+        {{ buttons }}
+            <button type="submit" class="btn btn-default">{% trans 'Submit' %}</button>
+        {{ endbuttons }}
+    </form>
+{% endblock %}

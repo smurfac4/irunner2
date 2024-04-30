@@ -1,12 +1,18 @@
 # -*- coding: utf-8 -*-
 from __future__ import unicode_literals
 
+from django import forms
+from django.contrib import messages
+from django.core.mail import send_mail
 from django.http import HttpResponse
-from django.shortcuts import render
+from django.shortcuts import redirect, render
 from django.urls import reverse
 from django.utils.html import mark_safe
+from django.utils.translation import ugettext_lazy as _
+from django.views import generic
 from django.views.decorators.csrf import csrf_exempt
 
+from cauth.mixins import StaffMemberRequiredMixin
 from common.pylightex import tex2html
 from contests.homeblock import ContestBlockFactory
 from courses.homeblock import CourseBlockFactory
@@ -85,3 +91,35 @@ def tex_markup(request):
         sections.append((name, examples))
 
     return render(request, 'home/texmarkup.html', {'sections': sections})
+
+
+class TestEmailForm(forms.Form):
+    email = forms.EmailField(label='Email', required=True)
+    subject = forms.CharField(label=_('Subject'), required=False)
+    body = forms.CharField(
+        label=_('Message'),
+        required=False,
+        widget=forms.Textarea(),
+        max_length=2**16
+    )
+
+
+class TestSendingEmailsView(StaffMemberRequiredMixin, generic.FormView):
+    template_name = 'home/test_sending_emails.html'
+    form_class = TestEmailForm
+
+    def form_valid(self, form):
+        sent = False
+        try:
+            send_mail(
+                subject=form.cleaned_data['subject'],
+                message=form.cleaned_data['body'],
+                from_email=None,
+                recipient_list=[form.cleaned_data['email']],
+            )
+            sent = True
+        except Exception as e:
+            return render(self.request, self.template_name, {'form': form, 'exception': e, 'exception_type': type(e).__name__})
+        if sent:
+            messages.success(self.request, 'OK')
+        return redirect('test_sending_emails')

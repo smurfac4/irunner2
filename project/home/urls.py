@@ -9,4 +9,5 @@ urlpatterns = [
     url(r'^cookie-policy/$', views.cookie_policy, name='cookie_policy'),
     url(r'^cookie-policy/accept/$', views.accept_cookie_policy, name='accept_cookie_policy'),
     url(r'^help/tex-markup/', views.tex_markup, name='tex_markup'),
+    url(r'^test-sending-emails/', views.TestSendingEmailsView.as_view(), name='test_sending_emails'),
 ]
