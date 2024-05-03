@@ -159,7 +159,7 @@ def irunner_solutions_scorebox(judgement=None, hide_score_if_accepted=False, acc
         if accepted and hide_score_if_accepted:
             pass
         else:
-            if judgement.score == judgement.max_score or judgement.max_score >= 1000:
+            if judgement.score == judgement.max_score or judgement.max_score >= 1000 or judgement.max_score == 0:
                 contents = '{0}'.format(judgement.score)
             else:
                 contents = '{0}&thinsp;/&thinsp;{1}'.format(judgement.score, judgement.max_score)

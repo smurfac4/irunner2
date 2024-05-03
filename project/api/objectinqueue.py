@@ -26,6 +26,7 @@ from api.workerstructs import (
     WorkerTestCase,
     WorkerTestingJob,
     WorkerValidator,
+    WorkerScorer,
 )
 
 
@@ -201,6 +202,10 @@ class JudgementInQueue(IObjectInQueue):
                 ProgrammingLanguage.ZIP: WorkerChecker.GTEST,
             }.get(checker.compiler.language, WorkerChecker.IRUNNER)
             wproblem.checker = WorkerChecker(checker, kind)
+
+        scorer = problem.problemrelatedsourcefile_set.filter(file_type=ProblemRelatedSourceFile.SCORER).first()
+        if scorer is not None:
+            wproblem.scorer = WorkerScorer(scorer)
 
         for lib in problem.problemrelatedsourcefile_set.filter(file_type=ProblemRelatedSourceFile.LIBRARY):
             wproblem.libraries.append(WorkerLibrary(lib))

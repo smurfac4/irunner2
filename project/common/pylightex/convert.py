@@ -65,7 +65,7 @@ mbox_cmd: "\\mbox{" phrase "}"
 // Sectioning
 section_cmd: "\\section{" phrase "}"
 subsection_cmd: "\\subsection{" phrase "}"
-!olymp_section_cmd: "\\InputFile" | "\\OutputFile" | "\\Note" | "\\Example" | "\\Examples"
+!olymp_section_cmd: "\\InputFile" | "\\OutputFile" | "\\Note" | "\\Notes" | "\\Example" | "\\Examples" | "\\Scoring"
 
 // Images
 includegraphics_cmd: "\\includegraphics{" text_phrase "}"

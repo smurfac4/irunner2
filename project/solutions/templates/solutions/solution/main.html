@@ -27,7 +27,7 @@
 
                     {% if permissions.can_view_state and solution.best_judgement and not solution.stop_on_fail %}
                         <dt>{% trans 'Score' %}</dt>
-                        <dd>{{ solution.best_judgement.score }} {% trans 'of' %} {{ solution.best_judgement.max_score }}</dd>
+                        <dd>{{ solution.best_judgement.score }}{% if solution.best_judgement.max_score %} {% trans 'of' %} {{ solution.best_judgement.max_score }}{% endif %}</dd>
                     {% endif %}
 
                     <dt>{% trans 'Author' %}</dt>

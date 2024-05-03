@@ -28,7 +28,7 @@
         <dd>{{ judgement.show_status }}</dd>
 
         <dt>{% trans 'Score' %}</dt>
-        <dd>{{ judgement.score }} {% trans 'of' %} {{ judgement.max_score }}</dd>
+        <dd>{{ judgement.score }}{% if judgement.max_score %} {% trans 'of' %} {{ judgement.max_score }}{% endif %}</dd>
     </dl>
 
     {% irunner_solutions_checkfailed extra_info %}

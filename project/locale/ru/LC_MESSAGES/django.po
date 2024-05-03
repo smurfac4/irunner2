@@ -7,8 +7,8 @@ msgid ""
 msgstr ""
 "Project-Id-Version: \n"
 "Report-Msgid-Bugs-To: \n"
-"POT-Creation-Date: 2024-04-30 03:29+0300\n"
-"PO-Revision-Date: 2024-04-30 03:32+0300\n"
+"POT-Creation-Date: 2024-05-02 17:40+0300\n"
+"PO-Revision-Date: 2024-05-02 17:42+0300\n"
 "Last-Translator: \n"
 "Language-Team: \n"
 "Language: ru\n"
@@ -1873,6 +1873,9 @@ msgstr "Содержание"
 msgid "Markup"
 msgstr "Разметка"
 
+msgid "Subject"
+msgstr "Тема"
+
 msgid "Wiki"
 msgstr "Вики"
 
@@ -1881,9 +1884,6 @@ msgstr "Новости"
 
 msgid "Add news"
 msgstr "Добавить новость"
-
-msgid "Subject"
-msgstr "Тема"
 
 msgid "Update news"
 msgstr "Обновить новость"
@@ -1992,6 +1992,9 @@ msgstr "Библиотека"
 
 msgid "Validator"
 msgstr "Контролёр тестов"
+
+msgid "Scorer"
+msgstr "Оценщик"
 
 msgid "compiler"
 msgstr "компилятор"
@@ -2500,6 +2503,14 @@ msgstr "Примеры"
 msgctxt "section"
 msgid "Note"
 msgstr "Замечание"
+
+msgctxt "section"
+msgid "Notes"
+msgstr "Замечания"
+
+msgctxt "section"
+msgid "Scoring"
+msgstr "Система оценки"
 
 msgid "Possible choices"
 msgstr "Возможные варианты"

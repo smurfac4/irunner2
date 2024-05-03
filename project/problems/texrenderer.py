@@ -28,6 +28,8 @@ PYLIGHTEX_SECTIONS = {
     'Example': pgettext_lazy('section', 'Example'),
     'Examples': pgettext_lazy('section', 'Examples'),
     'Note': pgettext_lazy('section', 'Note'),
+    'Notes': pgettext_lazy('section', 'Notes'),
+    'Scoring': pgettext_lazy('section', 'Scoring'),
 }
 
 '''

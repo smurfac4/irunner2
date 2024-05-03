@@ -170,12 +170,14 @@ class ProblemRelatedFile(FileMetadataBase):
 
 
 class ProblemRelatedSourceFile(FileMetadataBase):
+    # These magic constants come from the iRunner 1 (see localization/resources.xml)
     AUTHORS_SOLUTION = 215
     CHECKER = 216
     CONTESTANT_SOLUTION = 217
     GENERATOR = 218
     LIBRARY = 219
     VALIDATOR = 223
+    SCORER = 224
 
     FILE_TYPE_CHOICES = (
         (AUTHORS_SOLUTION, _('Author\'s solution')),
@@ -184,6 +186,7 @@ class ProblemRelatedSourceFile(FileMetadataBase):
         (GENERATOR, _('Generator')),
         (LIBRARY, _('Library')),
         (VALIDATOR, _('Validator')),
+        (SCORER, _('Scorer')),
     )
 
     # null for global checkers

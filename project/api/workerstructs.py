@@ -24,6 +24,7 @@ class WorkerProblem(object):
         self.checker = None
         self.libraries = []
         self.validator = None
+        self.scorer = None
         self.default_time_limit = None
 
 
@@ -75,6 +76,11 @@ class WorkerLibrary(object):
 class WorkerValidator(object):
     def __init__(self):
         self.source = None
+
+
+class WorkerScorer(object):
+    def __init__(self, source=None):
+        self.source = source
 
 
 class WorkerGreeting(object):

@@ -107,6 +107,10 @@ class WorkerValidatorSerializer(serializers.Serializer):
     source = ProblemRelatedSourceFileSerializer()
 
 
+class WorkerScorerSerializer(serializers.Serializer):
+    source = ProblemRelatedSourceFileSerializer()
+
+
 class WorkerProblemSerializer(serializers.Serializer):
     id = serializers.IntegerField()
     name = serializers.CharField()
@@ -116,6 +120,7 @@ class WorkerProblemSerializer(serializers.Serializer):
     checker = WorkerCheckerSerializer()
     libraries = WorkerLibrarySerializer(many=True)
     validator = WorkerValidatorSerializer()
+    scorer = WorkerScorerSerializer()
     default_time_limit = serializers.IntegerField()
 
 
