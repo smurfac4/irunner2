@@ -59,6 +59,9 @@ class Command(BaseCommand):
         batch_last_id = 0
         batch_size = 10000
         field_names = ['output_resource_id', 'stdout_resource_id', 'stderr_resource_id']
+        files_removed = 0
+        total_size = 0
+
         while True:
             test_case_qs = TestCaseResult.objects.\
                 filter(judgement_id__lte=last_judgement.id).\
@@ -76,9 +79,6 @@ class Command(BaseCommand):
             if len(test_cases) == 0:
                 break
             batch_last_id = test_cases[-1]['id']
-
-            files_removed = 0
-            total_size = 0
 
             for test_case in test_cases:
                 testcase_id, judjement_id = test_case['id'], test_case['judgement_id']
