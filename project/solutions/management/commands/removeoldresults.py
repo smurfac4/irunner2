@@ -28,7 +28,7 @@ def read_fs_dump(path):
     with open(path) as fd:
         for line in fd:
             resource_id, size = line.rstrip().split('\t')[:2]
-            fs[ResourceId.parse(resource_id)] = int(size)
+            fs[resource_id] = int(size)
     return fs
 
 
@@ -89,7 +89,7 @@ class Command(BaseCommand):
                     blob = _get_data_directly(resource_id)
                     if blob is not None:
                         continue
-                    size = fs.get(resource_id)
+                    size = fs.get(str(resource_id))
                     if size is None:
                         logger.warning('Missing file %s', resource_id)
                         continue
