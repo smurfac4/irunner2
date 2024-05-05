@@ -8,7 +8,7 @@ from collections import defaultdict, Counter
 from django.core.management.base import BaseCommand
 from django.db.models import Count
 
-from storage.storage import HASH_SIZE
+from storage.resource_id import HASH_SIZE
 from users.models import UserProfile
 from problems.models import TestCase, TestCaseValidation, ProblemRelatedFile, ProblemRelatedSourceFile
 from solutions.models import AdHocRun, JudgementLog, TestCaseResult, Challenge, ChallengedSolution
@@ -98,15 +98,25 @@ class Command(BaseCommand):
             ('stdout_resource_id', 'testcaseresult_stdout'),
             ('stderr_resource_id', 'testcaseresult_stderr'),
         ]
-        for fn, stat in FIELDS:
-            logger.info('> TestCaseResult (%s)', fn)
-            for resource_id, cnt in TestCaseResult.objects.\
-                    filter(**{'{}__isnull'.format(fn): False}).\
-                    annotate(cnt=Count(fn)).values_list(fn, 'cnt').\
-                    order_by().\
-                    iterator():
-                collector.add(resource_id, stat, cnt)
-            log_new()
+
+        batch_last_id = 0
+        batch_size = 100000
+        while True:
+            logger.info('> TestCaseResult (id > %d)', batch_last_id)
+            test_case_qs = TestCaseResult.objects.\
+                filter(id__gt=batch_last_id).\
+                values_list('id', *[field for field, _ in FIELDS]).\
+                order_by('id')[:batch_size]
+            test_cases = list(test_case_qs)
+            if len(test_cases) == 0:
+                break
+            for i, t in enumerate(FIELDS):
+                fn, stat = t
+                for testcase in test_cases:
+                    collector.add(testcase[i+1], stat)
+            batch_last_id = test_cases[-1][0]
+
+        log_new()
 
         logger.info('> Challenge')
         for inp, in Challenge.objects.values_list('input_resource_id'):
