@@ -38,7 +38,7 @@ $ pip install docker
 ```
 
 Edit the production config in `~/config.ini` (please change to real values):
-```(ini)
+```
 [Server]
 endpoint = http://localhost:8000/api/
 token = abacaba
