@@ -1,0 +1,16 @@
+[Unit]
+Description=iRunner Worker #2
+After=network.target
+StartLimitIntervalSec=0
+
+[Service]
+Type=simple
+Restart=always
+RestartSec=30
+User=tester
+ExecStart=/home/sobols/venv/bin/python3 /home/sobols/irunner2/irunner-unix-worker/main.py /home/sobols/config.ini
+WorkingDirectory=/opt/worker2
+
+[Install]
+WantedBy=multi-user.target
+

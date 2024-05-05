@@ -47,7 +47,8 @@ class Container:
             cap_add=['SYS_PTRACE'],
             volumes={
                 str(workdir.resolve()): {'bind': str(self.rodir), 'mode': 'ro'}
-            }
+            },
+            pids_limit=500,
         )
         c.start()
         c.wait()
