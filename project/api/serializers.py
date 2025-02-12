@@ -111,6 +111,10 @@ class WorkerScorerSerializer(serializers.Serializer):
     source = ProblemRelatedSourceFileSerializer()
 
 
+class WorkerInteractorSerializer(serializers.Serializer):
+    source = ProblemRelatedSourceFileSerializer()
+
+
 class WorkerProblemSerializer(serializers.Serializer):
     id = serializers.IntegerField()
     name = serializers.CharField()
@@ -121,7 +125,9 @@ class WorkerProblemSerializer(serializers.Serializer):
     libraries = WorkerLibrarySerializer(many=True)
     validator = WorkerValidatorSerializer()
     scorer = WorkerScorerSerializer()
+    interactor = WorkerInteractorSerializer()
     default_time_limit = serializers.IntegerField()
+    run_twice = serializers.BooleanField()
 
 
 class WorkerTestingJobSerializer(serializers.Serializer):

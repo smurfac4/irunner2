@@ -7,8 +7,8 @@ msgid ""
 msgstr ""
 "Project-Id-Version: \n"
 "Report-Msgid-Bugs-To: \n"
-"POT-Creation-Date: 2024-05-02 17:40+0300\n"
-"PO-Revision-Date: 2024-05-02 17:42+0300\n"
+"POT-Creation-Date: 2025-02-03 00:26+0300\n"
+"PO-Revision-Date: 2025-02-03 00:29+0300\n"
 "Last-Translator: \n"
 "Language-Team: \n"
 "Language: ru\n"
@@ -1945,6 +1945,9 @@ msgstr "разрешённые языки программирования"
 msgid "Check plagiarism"
 msgstr "Проверять на плагиат"
 
+msgid "Run solutions twice"
+msgstr "Запускать решения дважды"
+
 msgid "TeX statement (TeXtoHTML)"
 msgstr "Условие в формате TeX (TeXtoHTML)"
 
@@ -1996,6 +1999,9 @@ msgstr "Контролёр тестов"
 msgid "Scorer"
 msgstr "Оценщик"
 
+msgid "Interactor"
+msgstr "Интерактор"
+
 msgid "compiler"
 msgstr "компилятор"
 
@@ -2043,10 +2049,22 @@ msgstr "Ограничение по времени"
 msgid "Memory limit"
 msgstr "Ограничение по памяти"
 
+msgid "Allowed programming languages"
+msgstr "Разрешённые языки программирования"
+
 msgid "The number of the first test cases with full feedback available."
 msgstr ""
 "Число первых тестов, для которых будут открыты полные результаты "
 "тестирования."
+
+msgid ""
+"Enables the special judging format. Solutions will be invoked twice for each "
+"test: output of the solution or the interactor will be forwarded to the "
+"input on the second invocation. Probably, the problem should be interactive."
+msgstr ""
+"Включает специальный формат оценивания. Решения будут запускаться дважды для "
+"каждого теста: вывод решения или интерактора будет направлен на вход при "
+"втором запуске. Вероятно, задача должна быть интерактивной."
 
 msgid "A file with this name already exists."
 msgstr "Файл с таким именем уже существует."
@@ -3919,9 +3937,6 @@ msgstr ""
 
 #~ msgid "Notices"
 #~ msgstr "Объявления"
-
-#~ msgid "No solutions selected"
-#~ msgstr "Решения не выбраны"
 
 #~ msgid "Mass user registration"
 #~ msgstr "Массовая регистрация пользователей"

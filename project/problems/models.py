@@ -123,6 +123,7 @@ class ProblemExtraInfo(models.Model):
     sample_test_count = models.IntegerField(_('number of sample tests'), default=0)
     allowed_programming_languages = models.CharField(_('allowed programming languages'), max_length=255, null=False, blank=True)
     check_plagiarism = models.BooleanField(_('Check plagiarism'), default=True, blank=True)
+    run_twice = models.BooleanField(_('Run solutions twice'), default=False, blank=False)
 
 
 class ProblemRelatedFile(FileMetadataBase):
@@ -178,6 +179,7 @@ class ProblemRelatedSourceFile(FileMetadataBase):
     LIBRARY = 219
     VALIDATOR = 223
     SCORER = 224
+    INTERACTOR = 225
 
     FILE_TYPE_CHOICES = (
         (AUTHORS_SOLUTION, _('Author\'s solution')),
@@ -187,6 +189,7 @@ class ProblemRelatedSourceFile(FileMetadataBase):
         (LIBRARY, _('Library')),
         (VALIDATOR, _('Validator')),
         (SCORER, _('Scorer')),
+        (INTERACTOR, _('Interactor')),
     )
 
     # null for global checkers

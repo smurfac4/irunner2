@@ -27,6 +27,7 @@ from api.workerstructs import (
     WorkerTestingJob,
     WorkerValidator,
     WorkerScorer,
+    WorkerInteractor,
 )
 
 
@@ -170,10 +171,10 @@ class JudgementInQueue(IObjectInQueue):
 
     @staticmethod
     def _make_workerproblem(problem):
-        default_time_limit, sample_test_count = ProblemExtraInfo.objects.\
+        default_time_limit, sample_test_count, run_twice = ProblemExtraInfo.objects.\
             filter(problem=problem).\
-            values_list('default_time_limit', 'sample_test_count').\
-            first() or (DEFAULT_TIME_LIMIT, 0)
+            values_list('default_time_limit', 'sample_test_count', 'run_twice').\
+            first() or (DEFAULT_TIME_LIMIT, 0, False)
 
         wtests = []
         for tc in problem.testcase_set.all().order_by('ordinal_number', 'id'):
@@ -193,6 +194,7 @@ class JudgementInQueue(IObjectInQueue):
         wproblem.output_file_name = problem.output_filename
         wproblem.tests = wtests
         wproblem.default_time_limit = default_time_limit
+        wproblem.run_twice = run_twice
 
         checker = problem.problemrelatedsourcefile_set.filter(file_type=ProblemRelatedSourceFile.CHECKER).first()
         if checker is not None:
@@ -206,6 +208,12 @@ class JudgementInQueue(IObjectInQueue):
         scorer = problem.problemrelatedsourcefile_set.filter(file_type=ProblemRelatedSourceFile.SCORER).first()
         if scorer is not None:
             wproblem.scorer = WorkerScorer(scorer)
+
+        interactor = problem.problemrelatedsourcefile_set.filter(file_type=ProblemRelatedSourceFile.INTERACTOR).first()
+        if interactor is not None:
+            wproblem.interactor = WorkerInteractor(interactor)
+
+        # TODO: use single query to fetch all programs at once
 
         for lib in problem.problemrelatedsourcefile_set.filter(file_type=ProblemRelatedSourceFile.LIBRARY):
             wproblem.libraries.append(WorkerLibrary(lib))

@@ -69,17 +69,21 @@ class ProblemFoldersForm(forms.ModelForm):
 class ProblemExtraInfoForm(forms.ModelForm):
     default_time_limit = TimeLimitField(label=_('Time limit'), required=True)
     default_memory_limit = MemoryLimitField(label=_('Memory limit'), required=False)
-    allowed_programming_languages = ProgrammingLanguagesField(required=False)
+    allowed_programming_languages = ProgrammingLanguagesField(label=_('Allowed programming languages'), required=False)
 
     class Meta:
         model = ProblemExtraInfo
         fields = ['sample_test_count', 'default_time_limit', 'default_memory_limit',
-                  'description', 'allowed_programming_languages', 'check_plagiarism']
+                  'description', 'allowed_programming_languages', 'check_plagiarism', 'run_twice']
         widgets = {
             'description': forms.Textarea(attrs={'rows': 3}),
         }
         help_texts = {
-            'sample_test_count': _('The number of the first test cases with full feedback available.')
+            'sample_test_count': _('The number of the first test cases with full feedback available.'),
+            'run_twice': _('Enables the special judging format. '
+                           'Solutions will be invoked twice for each test: output of the solution or the interactor '
+                           'will be forwarded to the input on the second invocation. '
+                           'Probably, the problem should be interactive.'),
         }
 
 

@@ -152,6 +152,7 @@ def parse_archive(myzip, langcodes, compiler, user):
     problem.full_name = get_full_name(root, langcodes)
 
     judging = root.find('judging')
+    run_twice = judging.get('run-count') == '2'
     problem.input_filename = parse_input_output_file(judging.get('input-file'))
     problem.output_filename = parse_input_output_file(judging.get('output-file'))
     problem.full_clean()
@@ -165,7 +166,7 @@ def parse_archive(myzip, langcodes, compiler, user):
     tl_ml_set = False
     total_tests = 0
 
-    extra_info = ProblemExtraInfo(problem=problem)
+    extra_info = ProblemExtraInfo(problem=problem, run_twice=run_twice)
 
     for testset in judging.findall('testset'):
         time_limit = get_int(testset, 'time-limit')
@@ -209,8 +210,14 @@ def parse_archive(myzip, langcodes, compiler, user):
         for checker in root.findall('assets/checker'):
             load_source_file(myzip, checker, problem, ProblemRelatedSourceFile.CHECKER, compiler)
 
+        for interactor in root.findall('assets/interactor'):
+            load_source_file(myzip, interactor, problem, ProblemRelatedSourceFile.INTERACTOR, compiler)
+
         for validator in root.findall('assets/validators/validator'):
             load_source_file(myzip, validator, problem, ProblemRelatedSourceFile.VALIDATOR, compiler)
+
+        for scorer in root.findall('assets/scorer'):
+            load_source_file(myzip, scorer, problem, ProblemRelatedSourceFile.SCORER, compiler)
 
     existing_files = set()
     for langcode in langcodes:
