@@ -24,7 +24,7 @@
         <td class="ir-col-arrow">{# arrow > is shown only when the row can be expanded #}{% if toggleable %}<span class="ir-arrow">&#x25BA;</span>{% endif %}</td>
         <td class="ir-col-min">{% irunner_solutions_outcomebox test.outcome tooltip=columns.tooltip block=True %}</td>
         {% if columns.verbose_outcome %}<td>{{ test.get_outcome_display }}</td>{% endif %}
-        {% if columns.score %}<td class="ir-col-min-center{% if compact %} visible-xlg{% endif %}">{% if not compact %}{{ test.score }} {% trans 'of' %} {% endif %}{{ test.max_score }}</td>{% endif %}
+        {% if columns.score %}<td class="ir-col-min-center{% if compact %} visible-xlg{% endif %}">{{ test.score }}{% if not compact %} {% trans 'of' %} {{ test.max_score }}{% endif %}</td>{% endif %}
         <td class="ir-col-min-center">{% irunner_solutions_timelimitbox test.time_used test.time_limit %}</td>
         <td class="ir-col-min-center">{% irunner_solutions_memorylimitbox test.memory_used test.memory_limit %}</td>
         {% if columns.exit_code %}<td class="ir-col-min-center">{{ test.exit_code }}</td>{% endif %}
