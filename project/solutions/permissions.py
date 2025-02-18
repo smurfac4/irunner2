@@ -73,11 +73,11 @@ class SolutionPermissions(Permissions):
             self.allow_view_results()
 
         if level >= SolutionAccessLevel.TESTING_DETAILS_CHECKER_MESSAGES:
-            # self.allow_view_exit_codes()
             self.allow_view_checker_messages()
 
         if level >= SolutionAccessLevel.TESTING_DETAILS_TEST_DATA:
             self.allow_view_tests_data()
+            self.allow_view_exit_codes()
 
 
 # course/contest the solution belongs to
