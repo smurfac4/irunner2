@@ -27,7 +27,7 @@ class WorkerProblem(object):
         self.scorer = None
         self.interactor = None
         self.default_time_limit = None
-        self.run_twice = None
+        self.run_twice = False
 
 
 class WorkerTestingJob(object):
