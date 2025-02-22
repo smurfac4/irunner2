@@ -58,7 +58,7 @@
                     <td class="ir-column-penalty">{{ user_result.get_penalty_time }}</td>
                 {% endif %}
                 {% if results.column_presence.total_score %}
-                    <td>{{ user_result.get_total_score }}</td>
+                    <td>{{ user_result.get_total_score_str }}</td>
                 {% endif %}
             </tr>
         {% endfor %}

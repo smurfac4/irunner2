@@ -6,6 +6,7 @@ from collections import namedtuple
 
 from django.utils import timezone
 from django.utils.encoding import force_text
+from django.utils.formats import number_format
 from django.utils.safestring import mark_safe
 from django.utils.translation import ugettext as _
 
@@ -71,6 +72,10 @@ def total_minutes(td):
 
 def total_seconds(td):
     return td.days * 24 * 60 * 60 + td.seconds
+
+
+def _format_score(score):
+    return number_format(score, force_grouping=True)
 
 
 class ProblemResolver(object):
@@ -379,12 +384,13 @@ class IOIProblemResultBase(ProblemResultBase):
         if self._score is None:
             result = '.'
         else:
-            if self._max_score == 0:
-                result = '{0}'.format(self._score)
+            score_str = _format_score(self._score)
+            if self._max_score == 0 or self._score > self._max_score:
+                result = score_str
             elif self._score == self._max_score:
-                result = '<span class="ir-accepted">{0}</span>'.format(self._score)
+                result = '<span class="ir-accepted">{0}</span>'.format(score_str)
             else:
-                result = '<span class="ir-rejected">{0}</span>'.format(self._score)
+                result = '<span class="ir-rejected">{0}</span>'.format(score_str)
         return mark_safe(result)
 
 
@@ -481,6 +487,9 @@ class IOIUserResultBase(UserResultBase):
 
     def get_total_score(self):
         return self._total_score
+
+    def get_total_score_str(self):
+        return _format_score(self.get_total_score())
 
     def get_key(self):
         return (-self._total_score,)
