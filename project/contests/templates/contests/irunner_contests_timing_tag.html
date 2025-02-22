@@ -7,16 +7,16 @@
 <div class="ir-contest-timing">
     {% if status == 'BEFORE' %}
         <div class="ir-state">{% trans 'The contest has not started' %}</div>
-        <div class="ir-time">{% trans 'Time left to start' %}: {% irunner_time_deltahms time_before %}</div>
+        <div class="ir-time">{% trans 'Time left to start' %}: {% irunner_timedelta_hms time_before %}</div>
     {% endif %}
 
     {% if status == 'IN_PROGRESS' %}
         <div class="ir-state">{% trans 'The contest is running' %}</div>
-        <div class="ir-time">{{ time_passed }} {% trans 'of' %} {{ time_total }}</div>
+        <div class="ir-time">{% irunner_timedelta_hms time_passed %} {% trans 'of' %} {% irunner_timedelta_hms time_total %}</div>
     {% endif %}
 
     {% if status == 'AFTER' %}
         <div class="ir-state">{% trans 'The contest is over' %}</div>
-        <div class="ir-time">{{ time_passed }} {% trans 'of' %} {{ time_total }}</div>
+        <div class="ir-time">{% irunner_timedelta_hms time_passed %} {% trans 'of' %} {% irunner_timedelta_hms time_total %}</div>
     {% endif %}
 </div>
