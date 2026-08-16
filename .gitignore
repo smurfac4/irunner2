@@ -7,3 +7,4 @@
 /irunner-unix-worker/cache
 /irunner-unix-worker/sandbox
 /irunner-unix-worker/worker.log
+.venv/
