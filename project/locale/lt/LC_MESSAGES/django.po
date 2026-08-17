@@ -3948,3 +3948,7 @@ msgstr "Ar tikrai norite pakeisti šių naudotojų vardą ir pavardę?"
 
 #~ msgid "level"
 #~ msgstr "lygis"
+
+
+msgid "Change interface theme"
+msgstr "Keisti sąsajos temą"

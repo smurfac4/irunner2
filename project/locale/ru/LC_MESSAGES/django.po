@@ -3997,3 +3997,6 @@ msgstr ""
 
 #~ msgid "Management"
 #~ msgstr "Управление"
+
+msgid "Change interface theme"
+msgstr "Изменить тему интерфейса"

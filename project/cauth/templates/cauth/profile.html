@@ -25,5 +25,91 @@
             <a href="{% url 'two_factor:profile' %}" class="list-group-item">{% trans 'Two-factor authentication' %}</a>
         {% endif %}
         <a href="{% url 'language' %}?next={% irunner_next %}" class="list-group-item">{% trans 'Change interface language' %}</a>
+
+        <div class="list-group-item clearfix">
+            <span class="pull-left">{% trans 'Change interface theme' %}</span>
+            <div class="pull-right">
+                <label class="theme-switch">
+                    <input type="checkbox" id="themeToggle">
+                    <span class="theme-slider"></span>
+                </label>
+            </div>
+        </div>
     </div>
+
+    <style>
+        .theme-switch {
+            position: relative;
+            display: inline-block;
+            width: 44px;
+            height: 22px;
+            margin: 0;
+            vertical-align: middle;
+        }
+
+        .theme-switch input {
+            opacity: 0;
+            width: 0;
+            height: 0;
+        }
+
+        .theme-slider {
+            position: absolute;
+            cursor: pointer;
+            top: 0;
+            left: 0;
+            right: 0;
+            bottom: 0;
+            background-color: #ccc;
+            transition: .3s;
+            border-radius: 22px;
+        }
+
+        .theme-slider:before {
+            position: absolute;
+            content: "";
+            height: 16px;
+            width: 16px;
+            left: 3px;
+            bottom: 3px;
+            background-color: #fff;
+            transition: .3s;
+            border-radius: 50%;
+        }
+
+        input:checked + .theme-slider {
+            background-color: #337ab7;
+        }
+
+        input:checked + .theme-slider:before {
+            transform: translateX(22px);
+        }
+    </style>
+
+    <script>
+        document.addEventListener('DOMContentLoaded', function() {
+            var toggle = document.getElementById('themeToggle');
+            var isDark = localStorage.getItem('site-theme') === 'dark';
+
+            if (isDark) {
+                document.documentElement.classList.add('dark-theme');
+                document.body.classList.add('dark-theme');
+                if (toggle) toggle.checked = true;
+            }
+
+            if (toggle) {
+                toggle.addEventListener('change', function() {
+                    if (this.checked) {
+                        document.documentElement.classList.add('dark-theme');
+                        document.body.classList.add('dark-theme');
+                        localStorage.setItem('site-theme', 'dark');
+                    } else {
+                        document.documentElement.classList.remove('dark-theme');
+                        document.body.classList.remove('dark-theme');
+                        localStorage.setItem('site-theme', 'light');
+                    }
+                });
+            }
+        });
+    </script>
 {% endblock %}

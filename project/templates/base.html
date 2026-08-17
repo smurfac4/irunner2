@@ -19,6 +19,189 @@
         {#<link href="{% static 'bootstrap-3.4.1-dist/css/bootstrap-theme.css' %}" rel="stylesheet">#}
         <link href="{% static 'irunner2.css' %}?{{ REVISION }}" rel="stylesheet">
 
+        <style>
+            html.dark-theme,
+            body.dark-theme {
+                background-color: #1a1a1a !important;
+                color: #e0e0e0 !important;
+            }
+
+            body.dark-theme .jumbotron,
+            body.dark-theme .ir-jumbotron,
+            body.dark-theme .ir-welcome,
+            body.dark-theme .ir-banner {
+                background-color: #222222 !important;
+                border: 1px solid #333333 !important;
+                color: #e0e0e0 !important;
+            }
+
+            body.dark-theme .jumbotron h1,
+            body.dark-theme .jumbotron p,
+            body.dark-theme .jumbotron .lead {
+                color: #f0f0f0 !important;
+            }
+
+            body.dark-theme .jumbotron img,
+            body.dark-theme .jumbotron svg {
+                filter: brightness(0.9) contrast(1.1);
+            }
+
+            body.dark-theme .well,
+            body.dark-theme .breadcrumb,
+            body.dark-theme .panel,
+            body.dark-theme .panel-default,
+            body.dark-theme .panel-heading,
+            body.dark-theme .panel-body,
+            body.dark-theme .panel-footer,
+            body.dark-theme .list-group-item,
+            body.dark-theme form,
+            body.dark-theme .form-inline,
+            body.dark-theme .form-horizontal,
+            body.dark-theme [class*="filter"],
+            body.dark-theme [class*="toolbar"] {
+                background-color: #262626 !important;
+                border-color: #383838 !important;
+                color: #e0e0e0 !important;
+            }
+
+            body.dark-theme .dropdown-menu {
+                background-color: #222222 !important;
+                border-color: #383838 !important;
+            }
+
+            body.dark-theme .dropdown-menu > li > a {
+                color: #72aee6 !important;
+            }
+
+            body.dark-theme .dropdown-menu > li > a:hover,
+            body.dark-theme .dropdown-menu > li > a:focus {
+                background-color: #2f2f2f !important;
+                color: #ffffff !important;
+            }
+
+            body.dark-theme .dropdown-menu .divider {
+                background-color: #383838 !important;
+            }
+
+            body.dark-theme .btn-default {
+                background-color: #2b2b2b !important;
+                border-color: #444444 !important;
+                color: #e0e0e0 !important;
+            }
+
+            body.dark-theme .btn-default:hover,
+            body.dark-theme .btn-default:focus,
+            body.dark-theme .btn-default:active,
+            body.dark-theme .open > .dropdown-toggle.btn-default {
+                background-color: #383838 !important;
+                border-color: #555555 !important;
+                color: #ffffff !important;
+            }
+
+            body.dark-theme .form-control,
+            body.dark-theme select,
+            body.dark-theme input[type="text"],
+            body.dark-theme input[type="password"],
+            body.dark-theme input[type="search"],
+            body.dark-theme textarea {
+                background-color: #1e1e1e !important;
+                border-color: #444444 !important;
+                color: #ffffff !important;
+            }
+
+            body.dark-theme .input-group-addon {
+                background-color: #2b2b2b !important;
+                border-color: #444444 !important;
+                color: #e0e0e0 !important;
+            }
+
+            body.dark-theme .pagination > li > a,
+            body.dark-theme .pagination > li > span,
+            body.dark-theme .btn-group > .btn {
+                background-color: #262626 !important;
+                border-color: #383838 !important;
+                color: #72aee6 !important;
+            }
+
+            body.dark-theme .pagination > .active > a,
+            body.dark-theme .pagination > .active > span {
+                background-color: #337ab7 !important;
+                border-color: #337ab7 !important;
+                color: #ffffff !important;
+            }
+
+            body.dark-theme .pagination > li > a:hover,
+            body.dark-theme .pagination > li > span:hover,
+            body.dark-theme .btn-group > .btn:hover {
+                background-color: #333333 !important;
+            }
+
+            body.dark-theme .navbar-default {
+                background-color: #1e1e1e !important;
+                border-color: #333333 !important;
+            }
+
+            body.dark-theme .navbar-default .navbar-nav > li > a {
+                color: #c5c5c5 !important;
+            }
+
+            body.dark-theme .navbar-default .navbar-nav > .open > a,
+            body.dark-theme .navbar-default .navbar-nav > .open > a:focus,
+            body.dark-theme .navbar-default .navbar-nav > .open > a:hover {
+                background-color: #2a2a2a !important;
+                color: #ffffff !important;
+            }
+
+            body.dark-theme .footer {
+                background-color: #1e1e1e !important;
+                border-top: 1px solid #333333 !important;
+                color: #aaaaaa !important;
+            }
+
+            body.dark-theme .footer a {
+                color: #72aee6 !important;
+            }
+
+            body.dark-theme .table {
+                color: #e0e0e0 !important;
+            }
+
+            body.dark-theme .table > thead > tr > th,
+            body.dark-theme .table > tbody > tr > th,
+            body.dark-theme .table > tbody > tr > td {
+                border-top-color: #333333 !important;
+            }
+
+            body.dark-theme .table-striped > tbody > tr:nth-of-type(odd) {
+                background-color: #222222 !important;
+            }
+
+            body.dark-theme .table-hover > tbody > tr:hover {
+                background-color: #2d2d2d !important;
+            }
+
+            body.dark-theme a {
+                color: #72aee6;
+            }
+
+            body.dark-theme h1, body.dark-theme h2, body.dark-theme h3,
+            body.dark-theme h4, body.dark-theme h5, body.dark-theme h6,
+            body.dark-theme h1 small {
+                color: #f0f0f0 !important;
+            }
+        </style>
+
+        <script>
+            (function() {
+                if (localStorage.getItem('site-theme') === 'dark') {
+                    document.documentElement.classList.add('dark-theme');
+                    document.addEventListener('DOMContentLoaded', function() {
+                        document.body.classList.add('dark-theme');
+                    });
+                }
+            })();
+        </script>
+
         <!--[if lt IE 9]>
             <script src="{% static 'html5shiv/html5shiv.min.js' %}"></script>
             <script src="{% static 'respond/respond.min.js' %}"></script>
