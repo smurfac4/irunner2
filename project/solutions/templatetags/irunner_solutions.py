@@ -74,14 +74,14 @@ def irunner_solutions_judgementbox(judgement, tooltip=False, complete=True, bloc
                 code = TWO_LETTER_OUTCOME_CODES.get(judgement.outcome)
                 context['code'] = code
                 context['style'] = _get_style(judgement.outcome, code)
-                context['test_no'] = judgement.test_number
+                context['test_no'] = 0  # Полностью убираем вывод номера теста для любых результатов
             else:
                 context['code'] = 'AC'
                 context['style'] = 'pending'
         else:
             context['code'] = ONE_LETTER_STATUS_CODES.get(judgement.status, ELLIPSIS)
             if complete:
-                context['test_no'] = judgement.test_number
+                context['test_no'] = 0  # Убираем номер теста и в процессе тестирования
 
     if tooltip:
         context['tooltip'] = judgement.show_status(complete)
