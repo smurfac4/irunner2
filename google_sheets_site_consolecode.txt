@@ -1,0 +1,169 @@
+(function generateGoogleScriptFromDOM() {
+  const table = document.querySelector('table');
+  if (!table) return alert('Таблица не найдена!');
+
+  const G = "#78c278"; // Зелёный (сдано)
+  const S = "#e6e6e6"; // Серый (не сдано / не пытался)
+  const O = "#f0ad4e"; // Оранжевый (частичные баллы)
+
+  // 1. Извлечение заголовков
+  const theadRows = table.querySelectorAll('thead tr').length > 0 
+    ? table.querySelectorAll('thead tr') 
+    : table.querySelectorAll('tr:nth-child(1), tr:nth-child(2)');
+
+  const headerGrid = [];
+  const merges = [];
+
+  theadRows.forEach((tr, rIdx) => {
+    headerGrid[rIdx] = headerGrid[rIdx] || [];
+    let colCursor = 0;
+    tr.querySelectorAll('th, td').forEach(cell => {
+      while (headerGrid[rIdx][colCursor] !== undefined) colCursor++;
+      const text = cell.innerText.trim();
+      const rSpan = cell.rowSpan || 1;
+      const cSpan = cell.colSpan || 1;
+
+      for (let r = 0; r < rSpan; r++) {
+        for (let c = 0; c < cSpan; c++) {
+          headerGrid[rIdx + r] = headerGrid[rIdx + r] || [];
+          headerGrid[rIdx + r][colCursor + c] = (r === 0 && c === 0) ? text : '';
+        }
+      }
+
+      if (rSpan > 1 || cSpan > 1) {
+        merges.push({
+          row: rIdx + 1,
+          col: colCursor + 1,
+          numRows: rSpan,
+          numCols: cSpan
+        });
+      }
+      colCursor += cSpan;
+    });
+  });
+
+  // 2. Извлечение данных студентов и точное определение статуса
+  const tbodyRows = table.querySelectorAll('tbody tr').length > 0 
+    ? table.querySelectorAll('tbody tr') 
+    : Array.from(table.querySelectorAll('tr')).slice(headerGrid.length);
+
+  const valuesData = [];
+  const bgData = [];
+  const fontColorData = [];
+
+  tbodyRows.forEach(tr => {
+    const cells = tr.querySelectorAll('td, th');
+    if (cells.length < 3) return;
+
+    const rowVal = [];
+    const rowBg = [];
+    const rowFont = [];
+
+    cells.forEach((cell, idx) => {
+      const text = cell.innerText.trim();
+      rowVal.push(text);
+
+      // Первые две и последние две колонки (№, Имя, Užduotys, Taškai)
+      if (idx < 2 || idx >= cells.length - 2) {
+        rowBg.push('#ffffff');
+        rowFont.push('#333333');
+        return;
+      }
+
+      // Определение цвета для ячеек с задачами
+      const html = cell.innerHTML.toLowerCase();
+      const cls = (cell.className + " " + (cell.querySelector('*') ? cell.querySelector('*').className : '')).toLowerCase();
+
+      if (text.includes('/') || cls.includes('partial') || cls.includes('warning') || html.includes('2/4') || html.includes('0/7') || html.includes('2/17')) {
+        rowBg.push(O);
+        rowFont.push('#ffffff');
+      } else if (
+        cls.includes('ok') || cls.includes('success') || cls.includes('accepted') || cls.includes('passed') ||
+        html.includes('green') || html.includes('#5cb85c') || html.includes('#78c278') || html.includes('rgb(92, 184, 92)') ||
+        html.includes('rgb(120, 194, 120)') || (cell.querySelector('a') && !cls.includes('empty') && !cls.includes('none'))
+      ) {
+        rowBg.push(G);
+        rowFont.push('#ffffff');
+      } else {
+        rowBg.push(S);
+        rowFont.push('#333333');
+      }
+    });
+
+    valuesData.push(rowVal);
+    bgData.push(rowBg);
+    fontColorData.push(rowFont);
+  });
+
+  // 3. Формирование кода Apps Script
+  const code = `function fillSheetFromLiveWeb() {
+  const ss = SpreadsheetApp.getActiveSpreadsheet();
+  const sheet = ss.getActiveSheet();
+  sheet.clear();
+  sheet.clearConditionalFormatRules();
+
+  const headers = ${JSON.stringify(headerGrid, null, 2)};
+  const merges = ${JSON.stringify(merges, null, 2)};
+  const data = ${JSON.stringify(valuesData, null, 2)};
+  const bgs = ${JSON.stringify(bgData, null, 2)};
+  const fontColors = ${JSON.stringify(fontColorData, null, 2)};
+
+  if (headers.length > 0) {
+    sheet.getRange(1, 1, headers.length, headers[0].length).setValues(headers);
+    merges.forEach(m => {
+      sheet.getRange(m.row, m.col, m.numRows, m.numCols).merge();
+    });
+    
+    sheet.getRange(1, 1, headers.length, headers[0].length)
+      .setFontWeight("bold")
+      .setHorizontalAlignment("center")
+      .setVerticalAlignment("middle")
+      .setBackground("#fbfbfb");
+      
+    if (headers.length >= 2) {
+      sheet.getRange(2, 3, 1, headers[0].length - 4).setFontColor("#337ab7").setFontSize(9);
+    }
+  }
+
+  const startRow = headers.length + 1;
+  const numRows = data.length;
+  const numCols = data[0].length;
+
+  const dataRange = sheet.getRange(startRow, 1, numRows, numCols);
+  dataRange.setValues(data);
+  dataRange.setBackgrounds(bgs);
+  dataRange.setFontColors(fontColors);
+  dataRange.setFontWeight("bold");
+
+  const fullRange = sheet.getRange(1, 1, headers.length + numRows, numCols);
+  fullRange.setFontFamily("Arial").setFontSize(10);
+  fullRange.setBorder(true, true, true, true, true, true, "#d9d9d9", SpreadsheetApp.BorderStyle.SOLID);
+
+  sheet.getRange(startRow, 1, numRows, 1).setHorizontalAlignment("center").setFontWeight("normal");
+  sheet.getRange(startRow, 2, numRows, 1).setHorizontalAlignment("left");
+  sheet.getRange(startRow, 3, numRows, numCols - 4).setHorizontalAlignment("center");
+  sheet.getRange(startRow, numCols - 1, numRows, 2).setHorizontalAlignment("right").setFontWeight("normal");
+
+  sheet.setColumnWidth(1, 40);
+  sheet.setColumnWidth(2, 200);
+  for (let c = 3; c <= numCols - 2; c++) {
+    sheet.setColumnWidth(c, 55);
+  }
+  sheet.setColumnWidth(numCols - 1, 65);
+  sheet.setColumnWidth(numCols, 65);
+}`;
+
+  const textarea = document.createElement('textarea');
+  textarea.value = code;
+  textarea.style.position = 'fixed';
+  textarea.style.opacity = '0';
+  document.body.appendChild(textarea);
+  textarea.focus();
+  textarea.select();
+  document.execCommand('copy');
+  document.body.removeChild(textarea);
+
+  console.log("%c▼▼▼ СКОПИРОВАНО! ВСТАВЬТЕ ЭТОТ КОД В APPS SCRIPT ▼▼▼", "color: lime; font-size: 15px; font-weight: bold;");
+  console.log(code);
+  alert('Готовый скрипт скопирован в буфер обмена!');
+})();
