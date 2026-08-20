@@ -1,6 +1,7 @@
-from django.shortcuts import render
+from django.shortcuts import get_object_or_404, redirect, render
 from django.utils.translation import ugettext_lazy
 from django.views import generic
+from django.views.generic.base import View
 
 from cauth.mixins import StaffMemberRequiredMixin, ProblemEditorMemberRequiredMixin
 from common.pagination import paginate
@@ -79,3 +80,11 @@ class DeleteSolutionsView(StaffMemberRequiredMixin, MassOperationView):
 
     def get_queryset(self):
         return Solution.objects.order_by('id')
+
+
+class TogglePlagiarismView(ProblemEditorMemberRequiredMixin, View):
+    def post(self, request, solution_id):
+        solution = get_object_or_404(Solution, pk=solution_id)
+        solution.is_plagiarism = not solution.is_plagiarism
+        solution.save(update_fields=['is_plagiarism'])
+        return redirect(request.META.get('HTTP_REFERER', 'solutions:solution_plagiarism', solution.id))

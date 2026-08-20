@@ -72,19 +72,35 @@ def irunner_solutions_judgementbox(judgement, tooltip=False, complete=True, bloc
         if judgement.status == Judgement.DONE:
             if complete or (judgement.sample_tests_passed is False):
                 code = TWO_LETTER_OUTCOME_CODES.get(judgement.outcome)
-                context['code'] = code
-                context['style'] = _get_style(judgement.outcome, code)
-                context['test_no'] = 0  # Полностью убираем вывод номера теста для любых результатов
+                
+                # --- LOGIC FOR PLAGIARISM ---
+                is_plag = getattr(judgement.solution, 'is_cheater', False)
+                if judgement.outcome == Outcome.ACCEPTED and is_plag:
+                    context['code'] = 'OKC'   # <--- Replaced AC with OKC
+                    context['style'] = 'fail' 
+                else:
+                    context['code'] = code
+                    context['style'] = _get_style(judgement.outcome, code)
+                # ---------------------------
+
+                if judgement.outcome == Outcome.ACCEPTED:
+                    context['test_no'] = 0
+                else:
+                    context['test_no'] = 0
             else:
-                context['code'] = 'AC'
+                context['code'] = 'OKC' # <--- Just in case, replacing it here too (if status is still "in progress", but already AC)
                 context['style'] = 'pending'
         else:
             context['code'] = ONE_LETTER_STATUS_CODES.get(judgement.status, ELLIPSIS)
             if complete:
-                context['test_no'] = 0  # Убираем номер теста и в процессе тестирования
+                context['test_no'] = 0
 
     if tooltip:
-        context['tooltip'] = judgement.show_status(complete)
+        # Change tooltip on hover
+        if judgement is not None and getattr(judgement.solution, 'is_cheater', False) and judgement.outcome == Outcome.ACCEPTED:
+            context['tooltip'] = 'OK (Cheater)' # <--- Slightly changed the tooltip text for better appearance
+        else:
+            context['tooltip'] = judgement.show_status(complete)
 
     return context
 
@@ -96,7 +112,11 @@ def irunner_solutions_judgementtext(judgement, complete=True):
     '''
     text = ''
     if judgement is not None:
-        text = judgement.show_status(complete)
+        # Replace the full text
+        if getattr(judgement.solution, 'is_cheater', False) and judgement.outcome == Outcome.ACCEPTED:
+            text = 'OK (Cheater)' # <--- Replaced Accepted (Cheater) with OK (Cheater)
+        else:
+            text = judgement.show_status(complete)
 
     return text
 

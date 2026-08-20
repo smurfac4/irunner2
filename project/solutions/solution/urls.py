@@ -11,6 +11,7 @@ single_solution_urlpatterns = [
     url(r'^rejudge/$', views.SolutionRejudgeView.as_view(), name='perform_rejudge'),
     url(r'^attempts/$', views.SolutionAttemptsView.as_view(), name='attempts'),
     url(r'^plagiarism/$', views.SolutionPlagiarismView.as_view(), name='plagiarism'),
+    url(r'^toggle-plagiarism/$', views.SolutionTogglePlagiarismView.as_view(), name='toggle_plagiarism'),
     url(r'^status/json/$', views.SolutionStatusJsonView.as_view(), name='status_json'),
     url(r'^tests/(?P<testcaseresult_id>[0-9]+)/$', views.SolutionTestCaseResultView.as_view(), name='test_case_result'),
     url(r'^tests/(?P<testcaseresult_id>[0-9]+)/(?P<mode>input|output|answer|stdout|stderr)\.txt$', views.SolutionTestCaseResultDataView.as_view(), name='test_data'),

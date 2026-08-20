@@ -28,7 +28,26 @@ class Solution(models.Model):
     compiler = models.ForeignKey(Compiler, on_delete=models.PROTECT)
     stop_on_fail = models.BooleanField(default=False)
 
-    best_judgement = models.ForeignKey('Judgement', on_delete=models.SET_NULL, null=True, related_name='+')  # '+' means 'do not create a backwards relation'
+    
+    # 1. Allow the field to be None (3 states)
+    is_plagiarism = models.BooleanField(null=True, default=None, blank=True)
+
+    best_judgement = models.ForeignKey('Judgement', on_delete=models.SET_NULL, null=True, related_name='+')
+
+    # 2. Add a smart property
+    @property
+    def is_cheater(self):
+        if self.is_plagiarism is True:
+            return True   # Explicit cheater
+        if self.is_plagiarism is False:
+            return False  # Explicitly forgiven (immunity)
+        
+        # If None — check whether this author has other solutions causing a ban
+        return Solution.objects.filter(
+            author_id=self.author_id,
+            problem_id=self.problem_id,
+            is_plagiarism=True
+        ).exists()
 
 
 class Rejudge(models.Model):
