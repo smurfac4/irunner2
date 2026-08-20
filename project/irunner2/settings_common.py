@@ -76,6 +76,7 @@ MIDDLEWARE = [
     'django.middleware.locale.LocaleMiddleware',
     'common.middleware.LogRemoteUserMiddleware',
     'cauth.middleware.AdminMiddleware',
+    'irunner2.middleware.OneSessionPerUserMiddleware',
 ]
 
 ROOT_URLCONF = 'irunner2.urls'
