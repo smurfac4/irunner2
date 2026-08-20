@@ -41,6 +41,24 @@
                     {% endfor %}
                 </ul>
             </div>
+
+            
+            {% if permissions.can_view_plagiarism_details %}
+                <div class="btn-group btn-group pull-right" role="group">
+                    <form method="post" action="{% url 'solutions:toggle_plagiarism' solution.id %}" style="display: inline;">
+                        {% csrf_token %}
+                        {% if solution.is_cheater %}
+                            <button type="submit" class="btn btn-warning">
+                                <span class="glyphicon glyphicon-remove"></span> <span class="ir-icon-label">{% trans 'Unmark plagiarism' %}</span>
+                            </button>
+                        {% else %}
+                            <button type="submit" class="btn btn-danger">
+                                <span class="glyphicon glyphicon-flag"></span> <span class="ir-icon-label">{% trans 'Mark as plagiarism' %}</span>
+                            </button>
+                        {% endif %}
+                    </form>
+                </div>
+            {% endif %}
         </div>
     </div>
 

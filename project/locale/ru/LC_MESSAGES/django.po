@@ -4000,3 +4000,13 @@ msgstr ""
 
 msgid "Change interface theme"
 msgstr "Изменить тему интерфейса"
+
+
+msgid "Mark as plagiarism"
+msgstr "Пометить как плагиат"
+
+msgid "Unmark plagiarism"
+msgstr "Снять плагиат"
+
+msgid "Marked as plagiarism"
+msgstr "Помечено как плагиат"

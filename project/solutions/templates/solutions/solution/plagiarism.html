@@ -17,37 +17,59 @@
 </dl>
 
 {% if permissions.can_view_plagiarism_details %}
-{% if object_list %}
-    {% irunner_pagination pagination_context %}
-    <table class="table table-condensed">
-        <thead>
-            <tr>
-                <th>{% trans '#' %}</th>
-                <th>{% trans 'Time' %}</th>
-                <th>{% trans 'Author' %}</th>
-                <th>{% trans 'Algo' %}</th>
-                <th>{% trans 'Similarity' %}</th>
-                <th>{% trans 'Verdict' %}</th>
-                <th></th>
-            </tr>
-        </thead>
-        <tbody>
-            {% for judgement in object_list %}
-                <tr>
-                    <td><a href="{% url 'solutions:main' judgement.solution_to_compare.id %}">{{ judgement.solution_to_compare.id }}</a></td>
-                    <td>{{ judgement.solution_to_compare.reception_time }}</td>
-                    <td>{% irunner_users_show judgement.solution_to_compare.author %}</td>
-                    <td><span class="badge">{{ judgement.algorithm_id }}</span></td>
-                    <td><span style="color: {% irunner_plagiarism_csscolor judgement.similarity %};">{{ judgement.similarity }}</span></td>
-                    <td><span class="ir-monospace">{{ judgement.verdict }}</span></td>
-                    <td><a href="{% url 'solutions:compare' %}?first={{ judgement.solution_to_compare_id }}&amp;second={{ judgement.solution_to_judge_id }}">{% trans 'Compare' %}</a></td>
-                </tr>
-            {% endfor %}
-        </tbody>
-    </table>
+    <div style="margin: 15px 0 20px 0;">
+        <form method="post" action="{% url 'solutions:toggle_plagiarism' solution.id %}">
+            {% csrf_token %}
+            {% if solution.is_cheater %}
+                <button type="submit" class="btn btn-warning">
+                    <i class="glyphicon glyphicon-remove"></i> {% trans 'Unmark plagiarism' %}
+                </button>
+                <span class="label label-danger" style="margin-left: 10px; font-size: 13px; vertical-align: middle;">
+                    {% trans 'Marked as plagiarism' %}
+                </span>
+            {% else %}
+                <button type="submit" class="btn btn-danger">
+                    <i class="glyphicon glyphicon-flag"></i> {% trans 'Mark as plagiarism' %}
+                </button>
+            {% endif %}
+        </form>
+    </div>
 {% endif %}
+
+{% if permissions.can_view_plagiarism_details %}
+    {% if object_list %}
+        {% irunner_pagination pagination_context %}
+        <table class="table table-condensed">
+            <thead>
+                <tr>
+                    <th>{% trans '#' %}</th>
+                    <th>{% trans 'Time' %}</th>
+                    <th>{% trans 'Author' %}</th>
+                    <th>{% trans 'Algo' %}</th>
+                    <th>{% trans 'Similarity' %}</th>
+                    <th>{% trans 'Verdict' %}</th>
+                    <th></th>
+                </tr>
+            </thead>
+            <tbody>
+                {% for judgement in object_list %}
+                    <tr>
+                        <td><a href="{% url 'solutions:main' judgement.solution_to_compare.id %}">{{ judgement.solution_to_compare.id }}</a></td>
+                        <td>{{ judgement.solution_to_compare.reception_time }}</td>
+                        <td>{% irunner_users_show judgement.solution_to_compare.author %}</td>
+                        <td><span class="badge">{{ judgement.algorithm_id }}</span></td>
+                        <td><span style="color: {% irunner_plagiarism_csscolor judgement.similarity %};">{{ judgement.similarity }}</span></td>
+                        <td><span class="ir-monospace">{{ judgement.verdict }}</span></td>
+                        <td><a href="{% url 'solutions:compare' %}?first={{ judgement.solution_to_compare_id }}&amp;second={{ judgement.solution_to_judge_id }}">{% trans 'Compare' %}</a></td>
+                    </tr>
+                {% endfor %}
+            </tbody>
+        </table>
+    {% else %}
+        <div class="ir-absence">{% trans 'No data' %}</div>
+    {% endif %}
 {% else %}
-<div class="ir-absence">{% trans 'No access to other solutions.' %}</div>
+    <div class="ir-absence">{% trans 'No access to other solutions.' %}</div>
 {% endif %}
 
 {% endblock %}

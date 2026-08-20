@@ -10,7 +10,7 @@ from django.utils.encoding import force_text
 from django.utils.timesince import timesince
 from django.views import generic
 
-from cauth.mixins import LoginRequiredMixin
+from cauth.mixins import LoginRequiredMixin, ProblemEditorMemberRequiredMixin
 from common.highlight import list_highlight_styles, get_highlight_style, update_highlight_style
 from common.outcome import Outcome
 from common.pagination import paginate
@@ -407,3 +407,19 @@ class SolutionRejudgeView(LoginRequiredMixin, generic.View):
             notifier, rejudge = bulk_rejudge(Solution.objects.filter(pk=solution_id), self.request.user)
         notifier.notify()
         return redirect('solutions:rejudge', rejudge.id)
+
+class SolutionTogglePlagiarismView(ProblemEditorMemberRequiredMixin, generic.View):
+    def post(self, request, solution_id):
+        solution = get_object_or_404(Solution, pk=solution_id)
+        
+        if solution.is_cheater:
+            solution.is_plagiarism = False
+        else:
+            solution.is_plagiarism = True
+            
+        solution.save(update_fields=['is_plagiarism'])
+        
+        referer = request.META.get('HTTP_REFERER')
+        if referer:
+            return redirect(referer)
+        return redirect('solutions:main', solution_id=solution.id)
