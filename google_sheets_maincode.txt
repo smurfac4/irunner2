@@ -1,0 +1,600 @@
+/**
+ * =====================================================================
+ * НАСТРОЙКИ
+ * =====================================================================
+ */
+
+var BASE_URL = 'https://acm.vgtu.lt';
+var LOGIN_URL = BASE_URL + '/login/';
+var STANDINGS_URL = BASE_URL + '/courses/2543/standings/';
+
+// ВАЖНО: лучше не хранить пароль прямо в коде.
+// Одноразово запустите функцию saveCredentials() (см. низ файла),
+// она положит логин/пароль в Project Settings -> Script Properties,
+// а эти константы можно будет очистить.
+var USERNAME = PropertiesService.getScriptProperties().getProperty('USERNAME');
+var PASSWORD = PropertiesService.getScriptProperties().getProperty('PASSWORD');
+
+
+/**
+ * =====================================================================
+ * МЕНЮ / КНОПКА
+ * =====================================================================
+ */
+
+function onOpen() {
+  SpreadsheetApp.getUi()
+    .createMenu('iRunner')
+    .addItem('Обновить таблицу', 'fillSheetFromLiveWeb')
+    .addToUi();
+}
+
+// Если хотите именно "кнопку" (рисунок на листе), а не пункт меню:
+// Insert -> Drawing -> нарисуйте кнопку -> Save and Close ->
+// на самом рисунке правой кнопкой -> "Assign script" -> впишите:
+//   fillSheetFromLiveWeb
+
+
+/**
+ * =====================================================================
+ * ГЛАВНАЯ ФУНКЦИЯ (то, что запускается по кнопке)
+ * =====================================================================
+ */
+
+function fillSheetFromLiveWeb() {
+  const cookie = doLogin_();
+  const html = fetchStandingsHtml_(cookie);
+  const parsed = parseStandingsTable_(html);
+  renderToSheet_(parsed);
+}
+
+
+/**
+ * =====================================================================
+ * ШАГ A. ЛОГИН
+ * =====================================================================
+ * Возвращает строку вида "sessionid=XXXXX", которую нужно
+ * подставлять в заголовок Cookie для всех последующих запросов.
+ */
+
+function doLogin_() {
+  const creds = getCredentials_();
+
+  // 1) Заходим на страницу логина, чтобы получить csrf-токен
+  //    и первичные cookie (sessionid, csrftoken и т.п.)
+  const loginPageResp = UrlFetchApp.fetch(LOGIN_URL, {
+    method: 'get',
+    muteHttpExceptions: true,
+    followRedirects: true,
+  });
+
+  let cookieMap = extractCookie_(loginPageResp, {});
+  Logger.log('Cookie после GET /login/: ' + JSON.stringify(cookieMap));
+
+  const loginHtml = loginPageResp.getContentText();
+
+  const csrfMatch = loginHtml.match(/name="csrfmiddlewaretoken"\s+value="([^"]+)"/);
+  if (!csrfMatch) {
+    throw new Error(
+      'Не нашёл csrfmiddlewaretoken на странице логина. ' +
+      'Возможно, вёрстка формы изменилась. Первые 1000 симв. страницы:\n' +
+      loginHtml.substring(0, 1000)
+    );
+  }
+  const csrfToken = csrfMatch[1];
+
+  // 2) Отправляем форму логина, прикладывая ВСЕ накопленные cookie
+  const payload = {
+    csrfmiddlewaretoken: csrfToken,
+    'login_view-current_step': 'auth',
+    'auth-username': creds.username,
+    'auth-password': creds.password,
+  };
+
+  const loginPostResp = UrlFetchApp.fetch(LOGIN_URL, {
+    method: 'post',
+    payload: payload,
+    headers: {
+      'Cookie': cookieMapToHeader_(cookieMap),
+      'Referer': LOGIN_URL,
+      'Origin': BASE_URL,
+    },
+    muteHttpExceptions: true,
+    followRedirects: false, // сами разберёмся с редиректом, чтобы не потерять cookie
+  });
+
+  const code = loginPostResp.getResponseCode();
+
+  // Сливаем cookie из ответа POST поверх тех, что были после GET
+  cookieMap = extractCookie_(loginPostResp, cookieMap);
+  Logger.log('Cookie после POST /login/ (код ' + code + '): ' + JSON.stringify(cookieMap));
+
+  // Успешный логин обычно даёт 302 редирект + обновлённую (уже авторизованную) cookie
+  if (code === 302 || code === 301) {
+    return cookieMapToHeader_(cookieMap);
+  }
+
+  // Если вернулась снова HTML-страница (код 200) — скорее всего,
+  // неверный логин/пароль, либо есть доп. шаг (например 2FA),
+  // либо не хватает ещё одного скрытого поля формы
+  const respHtml = loginPostResp.getContentText();
+
+  const stepMatch = respHtml.match(/id="id_login_view-current_step"\s+value="([^"]+)"/);
+  const currentStep = stepMatch ? stepMatch[1] : null;
+
+  if (currentStep && currentStep !== 'auth') {
+    throw new Error(
+      'После логина форма перешла на следующий шаг ("' + currentStep + '"), ' +
+      'похоже на двухфакторную аутентификацию или доп. подтверждение. ' +
+      'Такое автоматически не пройти — нужно смотреть вручную. HTML фрагмент:\n' +
+      respHtml.substring(0, 1500)
+    );
+  }
+
+  // Проверяем, "эхнулось" ли обратно наше значение username в поле формы —
+  // если да, значит поля дошли правильно и дело именно в логине/пароле
+  // (или ещё в чём-то на сервере), если нет — значит поля формы не совпали
+  const usernameEchoMatch = respHtml.match(/id_auth-username"[^>]*value="([^"]*)"/);
+  Logger.log('Username, эхнутый формой обратно: ' + (usernameEchoMatch ? JSON.stringify(usernameEchoMatch[1]) : 'поле не найдено или без value'));
+
+  // Ищем сообщение об ошибке в разных возможных местах разметки
+  const errorPatterns = [
+    /<ul class="errorlist"[^>]*>[\s\S]*?<\/ul>/gi,
+    /<div class="alert[^"]*"[^>]*>[\s\S]*?<\/div>/gi,
+    /<span class="help-block"[^>]*>[\s\S]*?<\/span>/gi,
+    /<p class="help-block"[^>]*>[\s\S]*?<\/p>/gi,
+  ];
+
+  let foundErrors = [];
+  errorPatterns.forEach((re) => {
+    const matches = respHtml.match(re);
+    if (matches) {
+      foundErrors = foundErrors.concat(matches.map(stripTags_));
+    }
+  });
+
+  Logger.log('Найденные сообщения об ошибках: ' + JSON.stringify(foundErrors));
+
+  throw new Error(
+    'Логин не удался (код ответа ' + code + '). ' +
+    (foundErrors.length ? 'Сообщения формы: ' + foundErrors.join(' | ') : 'Явных сообщений об ошибке не найдено.') +
+    '\nФрагмент страницы (первые 4000 симв.):\n' + respHtml.substring(0, 4000)
+  );
+}
+
+
+/**
+ * =====================================================================
+ * ШАГ B. СКАЧИВАНИЕ STANDINGS
+ * =====================================================================
+ */
+
+function fetchStandingsHtml_(cookie) {
+  const resp = UrlFetchApp.fetch(STANDINGS_URL, {
+    method: 'get',
+    headers: {
+      'Cookie': cookie,
+    },
+    muteHttpExceptions: true,
+    followRedirects: true,
+  });
+
+  const html = resp.getContentText();
+
+  // Если нас вернуло на форму логина — значит сессия не авторизована
+  if (html.indexOf('auth-username') !== -1 && html.indexOf('csrfmiddlewaretoken') !== -1) {
+    throw new Error(
+      'Похоже, что после логина сессия не авторизована ' +
+      '(страница standings вернула форму логина). Код ответа: ' + resp.getResponseCode()
+    );
+  }
+
+  if (resp.getResponseCode() !== 200) {
+    throw new Error('Не удалось скачать standings, код ответа: ' + resp.getResponseCode());
+  }
+
+  return html;
+}
+
+
+/**
+ * =====================================================================
+ * ШАГ C. ПАРСИНГ HTML-ТАБЛИЦЫ (порт вашего браузерного скрипта)
+ * =====================================================================
+ */
+
+var COLOR_GREEN = '#78c278';
+var COLOR_GRAY = '#e6e6e6';
+var COLOR_ORANGE = '#f0ad4e';
+
+function parseStandingsTable_(html) {
+  const tableMatch = html.match(/<table\b[\s\S]*?<\/table>/i);
+  if (!tableMatch) {
+    throw new Error('На странице standings не найдено ни одной <table>.');
+  }
+  const tableHtml = tableMatch[0];
+
+  const theadMatch = tableHtml.match(/<thead\b[\s\S]*?<\/thead>/i);
+  const tbodyMatch = tableHtml.match(/<tbody\b[\s\S]*?<\/tbody>/i);
+
+  const allRows = extractRows_(tableHtml);
+
+  let headerRowsHtml;
+  let bodyRowsHtml;
+
+  if (theadMatch) {
+    headerRowsHtml = extractRows_(theadMatch[0]);
+    bodyRowsHtml = tbodyMatch ? extractRows_(tbodyMatch[0]) : allRows.slice(headerRowsHtml.length);
+  } else {
+    // fallback: первые 2 строки — заголовок (как в оригинальном скрипте)
+    headerRowsHtml = allRows.slice(0, 2);
+    bodyRowsHtml = allRows.slice(2);
+  }
+
+  // ---- 1. Заголовки ----
+  const headerGrid = [];
+  const merges = [];
+
+  headerRowsHtml.forEach((rowHtml, rIdx) => {
+    headerGrid[rIdx] = headerGrid[rIdx] || [];
+    let colCursor = 0;
+
+    const cells = extractCells_(rowHtml);
+
+    cells.forEach((cell) => {
+      while (headerGrid[rIdx][colCursor] !== undefined) colCursor++;
+
+      const text = stripTags_(cell.inner);
+      const rSpan = cell.rowspan || 1;
+      const cSpan = cell.colspan || 1;
+
+      for (let r = 0; r < rSpan; r++) {
+        for (let c = 0; c < cSpan; c++) {
+          headerGrid[rIdx + r] = headerGrid[rIdx + r] || [];
+          headerGrid[rIdx + r][colCursor + c] = (r === 0 && c === 0) ? text : '';
+        }
+      }
+
+      if (rSpan > 1 || cSpan > 1) {
+        merges.push({
+          row: rIdx + 1,
+          col: colCursor + 1,
+          numRows: rSpan,
+          numCols: cSpan,
+        });
+      }
+
+      colCursor += cSpan;
+    });
+  });
+
+  // Выравниваем все строки заголовка по максимальной длине (на случай "дыр")
+  const headerWidth = headerGrid.reduce((m, row) => Math.max(m, row.length), 0);
+  headerGrid.forEach((row) => {
+    for (let c = 0; c < headerWidth; c++) {
+      if (row[c] === undefined) row[c] = '';
+    }
+  });
+
+  // ---- 2. Данные студентов ----
+  const valuesData = [];
+  const bgData = [];
+  const fontColorData = [];
+
+  bodyRowsHtml.forEach((rowHtml) => {
+    const cells = extractCells_(rowHtml);
+    if (cells.length < 3) return;
+
+    const rowVal = [];
+    const rowBg = [];
+    const rowFont = [];
+
+    cells.forEach((cell, idx) => {
+      const text = stripTags_(cell.inner);
+      rowVal.push(text);
+
+      // Первые две и последние две колонки (№, Имя, Задачи, Баллы)
+      if (idx < 2 || idx >= cells.length - 2) {
+        rowBg.push('#ffffff');
+        rowFont.push('#333333');
+        return;
+      }
+
+      const innerHtmlLower = cell.inner.toLowerCase();
+      const cellClass = (cell.classAttr + ' ' + cell.childClassAttr).toLowerCase();
+
+      if (
+        text.indexOf('/') !== -1 ||
+        cellClass.indexOf('partial') !== -1 ||
+        cellClass.indexOf('warning') !== -1
+      ) {
+        rowBg.push(COLOR_ORANGE);
+        rowFont.push('#ffffff');
+      } else if (
+        cellClass.indexOf('ok') !== -1 ||
+        cellClass.indexOf('success') !== -1 ||
+        cellClass.indexOf('accepted') !== -1 ||
+        cellClass.indexOf('passed') !== -1 ||
+        innerHtmlLower.indexOf('#5cb85c') !== -1 ||
+        innerHtmlLower.indexOf('#78c278') !== -1 ||
+        innerHtmlLower.indexOf('rgb(92, 184, 92)') !== -1 ||
+        innerHtmlLower.indexOf('rgb(120, 194, 120)') !== -1 ||
+        (
+          /<a\b/i.test(cell.inner) &&
+          cellClass.indexOf('empty') === -1 &&
+          cellClass.indexOf('none') === -1
+        )
+      ) {
+        rowBg.push(COLOR_GREEN);
+        rowFont.push('#ffffff');
+      } else {
+        rowBg.push(COLOR_GRAY);
+        rowFont.push('#333333');
+      }
+    });
+
+    valuesData.push(rowVal);
+    bgData.push(rowBg);
+    fontColorData.push(rowFont);
+  });
+
+  return { headerGrid, merges, valuesData, bgData, fontColorData };
+}
+
+
+/**
+ * Разбивает HTML-фрагмент на массив содержимого <tr>...</tr>
+ * (возвращает внутренности тега, без самого <tr>)
+ */
+function extractRows_(html) {
+  const rows = [];
+  const re = /<tr\b[^>]*>([\s\S]*?)<\/tr>/gi;
+  let m;
+  while ((m = re.exec(html)) !== null) {
+    rows.push(m[1]);
+  }
+  return rows;
+}
+
+/**
+ * Разбивает содержимое одной строки на массив ячеек {tag, colspan, rowspan, classAttr, childClassAttr, inner}
+ */
+function extractCells_(rowHtml) {
+  const cells = [];
+  const re = /<(th|td)\b([^>]*)>([\s\S]*?)<\/\1>/gi;
+  let m;
+  while ((m = re.exec(rowHtml)) !== null) {
+    const attrs = m[2];
+    const inner = m[3];
+
+    const colspanMatch = attrs.match(/colspan\s*=\s*["']?(\d+)["']?/i);
+    const rowspanMatch = attrs.match(/rowspan\s*=\s*["']?(\d+)["']?/i);
+    const classMatch = attrs.match(/class\s*=\s*["']([^"']*)["']/i);
+
+    // класс первого вложенного тега (аналог cell.querySelector('*').className)
+    const childClassMatch = inner.match(/<[a-zA-Z][^>]*class\s*=\s*["']([^"']*)["']/i);
+
+    cells.push({
+      colspan: colspanMatch ? parseInt(colspanMatch[1], 10) : 1,
+      rowspan: rowspanMatch ? parseInt(rowspanMatch[1], 10) : 1,
+      classAttr: classMatch ? classMatch[1] : '',
+      childClassAttr: childClassMatch ? childClassMatch[1] : '',
+      inner: inner,
+    });
+  }
+  return cells;
+}
+
+/**
+ * Убирает html-теги и раскодирует основные html-сущности, аналог innerText
+ */
+function stripTags_(html) {
+  let text = html.replace(/<[^>]*>/g, ' ');
+  text = text
+    .replace(/&nbsp;/g, ' ')
+    .replace(/&thinsp;/g, '') // Убираем тонкую шпацию, из-за которой ломаются дроби
+    .replace(/&mdash;/g, '—')
+    .replace(/&ndash;/g, '–')
+    .replace(/&amp;/g, '&')
+    .replace(/&lt;/g, '<')
+    .replace(/&gt;/g, '>')
+    .replace(/&quot;/g, '"')
+    .replace(/&#39;/g, "'");
+  text = text.replace(/\s+/g, ' ').trim();
+  return text;
+}
+
+
+/**
+ * =====================================================================
+ * ШАГ D. ЗАПИСЬ В ЛИСТ (тот же вывод, что генерировал ваш браузерный скрипт)
+ * =====================================================================
+ */
+
+function renderToSheet_(parsed) {
+  const { headerGrid, merges, valuesData, bgData, fontColorData } = parsed;
+
+  const ss = SpreadsheetApp.getActiveSpreadsheet();
+  const sheet = ss.getActiveSheet();
+  sheet.clear();
+  sheet.clearConditionalFormatRules();
+
+  if (headerGrid.length > 0) {
+    sheet.getRange(1, 1, headerGrid.length, headerGrid[0].length).setValues(headerGrid);
+
+    merges.forEach((m) => {
+      sheet.getRange(m.row, m.col, m.numRows, m.numCols).merge();
+    });
+
+    sheet.getRange(1, 1, headerGrid.length, headerGrid[0].length)
+      .setFontWeight('bold')
+      .setHorizontalAlignment('center')
+      .setVerticalAlignment('middle')
+      .setBackground('#fbfbfb');
+
+    if (headerGrid.length >= 2) {
+      sheet.getRange(2, 3, 1, headerGrid[0].length - 4).setFontColor('#337ab7').setFontSize(9);
+    }
+  }
+
+  if (valuesData.length === 0) {
+    SpreadsheetApp.getUi().alert('Таблица скачана, но строк с данными не найдено. Проверьте вёрстку standings.');
+    return;
+  }
+
+  const startRow = headerGrid.length + 1;
+  const numRows = valuesData.length;
+  const numCols = valuesData[0].length;
+
+  const dataRange = sheet.getRange(startRow, 1, numRows, numCols);
+  dataRange.setValues(valuesData);
+  dataRange.setBackgrounds(bgData);
+  dataRange.setFontColors(fontColorData);
+  dataRange.setFontWeight('bold');
+
+  const fullRange = sheet.getRange(1, 1, headerGrid.length + numRows, numCols);
+  fullRange.setFontFamily('Arial').setFontSize(10);
+  fullRange.setBorder(true, true, true, true, true, true, '#d9d9d9', SpreadsheetApp.BorderStyle.SOLID);
+
+  sheet.getRange(startRow, 1, numRows, 1).setHorizontalAlignment('center').setFontWeight('normal');
+  sheet.getRange(startRow, 2, numRows, 1).setHorizontalAlignment('left');
+  sheet.getRange(startRow, 3, numRows, numCols - 4).setHorizontalAlignment('center');
+  sheet.getRange(startRow, numCols - 1, numRows, 2).setHorizontalAlignment('right').setFontWeight('normal');
+
+  sheet.setColumnWidth(1, 40);
+  sheet.setColumnWidth(2, 200);
+  for (let c = 3; c <= numCols - 2; c++) {
+    sheet.setColumnWidth(c, 55);
+  }
+  sheet.setColumnWidth(numCols - 1, 65);
+  sheet.setColumnWidth(numCols, 65);
+}
+
+
+/**
+ * =====================================================================
+ * СЛУЖЕБНОЕ: cookies и credentials
+ * =====================================================================
+ */
+
+/**
+ * Извлекает ВСЕ cookie из ответа. Принципиально важно использовать
+ * getAllHeaders(), а не getHeaders() — если сервер прислал несколько
+ * заголовков Set-Cookie (например sessionid И csrftoken отдельно),
+ * getHeaders() в Apps Script иногда отдаёт только один из них,
+ * а getAllHeaders() корректно возвращает массив.
+ *
+ * existingCookieMap (необязательно) — объект {имя: значение} уже
+ * накопленных ранее cookie, чтобы можно было слить старые и новые
+ * (сервер не обязан присылать одну и ту же cookie повторно на
+ * каждом запросе).
+ */
+function extractCookie_(response, existingCookieMap) {
+  const cookieMap = Object.assign({}, existingCookieMap || {});
+
+  const headers = response.getAllHeaders ? response.getAllHeaders() : response.getHeaders();
+  let setCookie = headers['Set-Cookie'];
+
+  if (setCookie) {
+    const parts = Array.isArray(setCookie) ? setCookie : [setCookie];
+
+    parts.forEach((c) => {
+      const pair = c.split(';')[0].trim();
+      const eqIdx = pair.indexOf('=');
+      if (eqIdx === -1) return;
+      const name = pair.substring(0, eqIdx);
+      const value = pair.substring(eqIdx + 1);
+      cookieMap[name] = value;
+    });
+  }
+
+  return cookieMap;
+}
+
+function cookieMapToHeader_(cookieMap) {
+  return Object.keys(cookieMap)
+    .map((name) => name + '=' + cookieMap[name])
+    .join('; ');
+}
+
+function getCredentials_() {
+  const props = PropertiesService.getScriptProperties();
+  const savedUser = props.getProperty('IRUNNER_USERNAME');
+  const savedPass = props.getProperty('IRUNNER_PASSWORD');
+
+  if (savedUser && savedPass) {
+    return { username: savedUser, password: savedPass };
+  }
+
+  return { username: USERNAME, password: PASSWORD };
+}
+
+/**
+ * Запустите ОДИН РАЗ вручную, чтобы сохранить логин/пароль
+ * в Script Properties вместо хранения в открытом виде в коде.
+ * После этого можно очистить константы USERNAME/PASSWORD выше.
+ */
+function saveCredentials() {
+  const props = PropertiesService.getScriptProperties();
+  props.setProperty('IRUNNER_USERNAME', '202333144');
+  props.setProperty('IRUNNER_PASSWORD', 'ALEKSvans123');
+  Logger.log('Сохранено. Теперь можно стереть пароль из констант в коде.');
+}
+
+
+/**
+ * =====================================================================
+ * ОТЛАДКА (по желанию)
+ * =====================================================================
+ */
+
+function debugFirstDataRow() {
+  const cookie = doLogin_();
+  const html = fetchStandingsHtml_(cookie);
+
+  const tableMatch = html.match(/<table\b[\s\S]*?<\/table>/i);
+  if (!tableMatch) {
+    Logger.log('Таблица не найдена.');
+    return;
+  }
+  const tableHtml = tableMatch[0];
+
+  const tbodyMatch = tableHtml.match(/<tbody\b[\s\S]*?<\/tbody>/i);
+  const bodyHtml = tbodyMatch ? tbodyMatch[0] : tableHtml;
+
+  const rows = extractRows_(bodyHtml);
+  if (rows.length === 0) {
+    Logger.log('Строк в tbody не найдено.');
+    return;
+  }
+
+  Logger.log('=== Сырой HTML первой строки (tr) ===');
+  Logger.log(rows[0]);
+
+  Logger.log('=== Разбор по ячейкам (первые 8) ===');
+  const cells = extractCells_(rows[0]);
+  cells.slice(0, 8).forEach((cell, idx) => {
+    Logger.log(
+      'Ячейка #' + idx +
+      ' | colspan=' + cell.colspan +
+      ' | class="' + cell.classAttr + '"' +
+      ' | childClass="' + cell.childClassAttr + '"' +
+      ' | inner=' + cell.inner
+    );
+  });
+}
+
+function debugFullPipeline() {
+  const cookie = doLogin_();
+  Logger.log('Cookie после логина: ' + cookie);
+
+  const html = fetchStandingsHtml_(cookie);
+  Logger.log('Длина HTML standings: ' + html.length);
+  Logger.log('Первые 2000 симв.:');
+  Logger.log(html.substring(0, 2000));
+
+  const parsed = parseStandingsTable_(html);
+  Logger.log('Строк заголовка: ' + parsed.headerGrid.length);
+  Logger.log('Строк студентов: ' + parsed.valuesData.length);
+  Logger.log('Пример первой строки данных: ' + JSON.stringify(parsed.valuesData[0]));
+}
