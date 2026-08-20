@@ -86,6 +86,121 @@ def get_memory_arg(memory_limit):
     return '{}m'.format(memory_mb)
 
 
+# Universal "harness": the worker copies it along with the checker and
+# runs it instead of pytest. The harness itself imports test_solution.py,
+# calls all test_* functions in it, catches AssertionError and prints
+# EXACTLY WHAT should go into the "Checker message" to STDOUT —
+# nothing extra. Therefore, the worker no longer needs to parse/clean the output:
+# it just takes the harness's stdout as is.
+#
+# Contract for checker authors:
+#   - the function starts with test_
+#   - print() inside the test does not affect anything, only the text of the
+#     assert message matters (assert condition, "this text will be shown")
+#   - if you need to show something more complex than a single assert,
+#     just do `raise AssertionError("custom text")` anywhere
+_CHECKER_HARNESS = '''
+import sys
+import traceback
+import importlib.util
+
+spec = importlib.util.spec_from_file_location("checker", "test_solution.py")
+module = importlib.util.module_from_spec(spec)
+
+try:
+    spec.loader.exec_module(module)
+except Exception as exc:
+    print("Error in the checker itself: {}".format(exc))
+    sys.exit(2)
+
+test_funcs = [
+    getattr(module, name)
+    for name in dir(module)
+    if name.startswith("test_") and callable(getattr(module, name))
+]
+
+if not test_funcs:
+    print("No test_* functions found in the checker")
+    sys.exit(2)
+
+failed = False
+
+for func in test_funcs:
+    try:
+        func()
+    except AssertionError as exc:
+        failed = True
+        text = str(exc).strip()
+        print(text if text else "Check failed: {}".format(func.__name__))
+    except Exception as exc:
+        failed = True
+        print("Error executing check {}: {}".format(func.__name__, exc))
+
+sys.exit(1 if failed else 0)
+'''
+
+
+def run_checker(work, checker_path, elapsed):
+    """
+    Copies the checker (test_solution.py) to the working directory and runs it
+    via the universal harness (see _CHECKER_HARNESS above).
+
+    Returns:
+        None                -> checker passed (or was absent), can proceed
+        make_result(...)     -> checker failed, this is the final test result
+
+    Important: under the new checker, NO changes are needed in this function —
+    whatever the checker prints via the assert message will go into the
+    "Checker message" exactly as is.
+    """
+
+    local_checker = Path('test_solution.py')
+    target_checker = None
+
+    if checker_path and Path(checker_path).exists():
+        target_checker = Path(checker_path)
+    elif local_checker.exists():
+        target_checker = local_checker
+
+    if not target_checker or not target_checker.exists():
+        return None
+
+    shutil.copy(target_checker, work / 'test_solution.py')
+
+    harness_path = work / '_checker_harness.py'
+    harness_path.write_text(_CHECKER_HARNESS, encoding='utf-8')
+
+    test_proc = subprocess.run(
+        [
+            '/Users/avans/irunner2/.venv/bin/python',
+            str(harness_path),
+        ],
+        cwd=work,
+        stdout=subprocess.PIPE,
+        stderr=subprocess.PIPE,
+    )
+
+    if test_proc.returncode != 0:
+        message = test_proc.stdout.decode('utf-8', errors='replace').strip()
+
+        stderr_text = test_proc.stderr.decode('utf-8', errors='replace').strip()
+        if stderr_text:
+            message = (message + '\n' + stderr_text).strip()
+
+        if not message:
+            message = 'Check failed'
+
+        return make_result(
+            'WRONG_ANSWER',
+            test_proc.returncode,
+            elapsed,
+            0,
+            message[:500],
+        )
+
+    return None
+
+
 # ============================================================
 # PYTHON
 # ============================================================
@@ -228,16 +343,107 @@ def run_python_test(
 
 
 # ============================================================
+# BASH / SH (with local check via Pytest-checker)
+# ============================================================
+
+def run_sh_test(
+    solution_path,
+    input_path,
+    expected_path,
+    time_limit_ms,
+    memory_limit,
+    checker_path=None,
+):
+    with tempfile.TemporaryDirectory(
+        prefix='irunner-sh-'
+    ) as temp:
+
+        work = Path(temp)
+
+        # 1. Copy the student's solution
+        script_dest = work / 'solution.sh'
+        shutil.copy(solution_path, script_dest)
+        script_dest.chmod(0o755)
+
+        stdin_data = input_path.read_bytes()
+        expected_data = expected_path.read_bytes()
+        memory_arg = get_memory_arg(memory_limit)
+
+        # Run the student's bash script in Docker
+        cmd = [
+            'docker',
+            'run',
+            '--rm',
+            '--network', 'none',
+            '--memory', memory_arg,
+            '--cpus', '1',
+            '--pids-limit', '64',
+            '--security-opt', 'no-new-privileges',
+            '--volume', '{}:/work'.format(work.resolve()),
+            'simple-python-runner:latest',
+            'bash',
+            '/work/solution.sh',
+            '/work/foo.txt',
+        ]
+
+        timeout_seconds = max(
+            0.2,
+            float(time_limit_ms) / 1000.0,
+        )
+
+        started = time.monotonic()
+
+        try:
+            proc = subprocess.run(
+                cmd,
+                input=stdin_data,
+                stdout=subprocess.PIPE,
+                stderr=subprocess.PIPE,
+                timeout=timeout_seconds,
+            )
+
+        except subprocess.TimeoutExpired:
+            elapsed = int((time.monotonic() - started) * 1000)
+            return make_result('TIME_LIMIT_EXCEEDED', -1, elapsed, 0, 'Time limit exceeded')
+
+        elapsed = int((time.monotonic() - started) * 1000)
+
+        # If the bash script itself crashes
+        if proc.returncode != 0:
+            error_msg = proc.stderr.decode('utf-8', errors='replace')
+            return make_result(
+                'RUNTIME_ERROR',
+                proc.returncode,
+                elapsed,
+                0,
+                error_msg[:255],
+            )
+
+        # 2. Check the results via Pytest (if there is a local checker)
+        checker_result = run_checker(work, checker_path, elapsed)
+        if checker_result is not None:
+            return checker_result
+
+        return make_result(
+            'ACCEPTED',
+            0,
+            elapsed,
+            None,
+            '',
+        )
+
+
+# ============================================================
 # C++
 # ============================================================
 
 def compile_cpp(solution_path):
     """
-    Компилирует C++ один раз перед запуском тестов.
+    Compiles C++ once before running the tests.
 
-    Возвращает:
+    Returns:
         (tempdir, executable_path, None)
-    либо:
+    or:
         (None, None, error_message)
     """
 
@@ -349,6 +555,7 @@ def run_cpp_test(
     expected_path,
     time_limit_ms,
     memory_limit,
+    checker_path=None,
 ):
     work = executable_path.parent
 
@@ -452,21 +659,28 @@ def run_cpp_test(
         expected_data
     )
 
-    if actual == expected:
+    if actual != expected:
         return make_result(
-            'ACCEPTED',
+            'WRONG_ANSWER',
             0,
             elapsed,
-            None,
-            '',
+            0,
+            'Wrong answer',
         )
 
+    # The output matched — now additionally run the pytest-checker
+    # (for example, checking "is the class keyword used"
+    # in the solution.cpp source file located next to it in work/).
+    checker_result = run_checker(work, checker_path, elapsed)
+    if checker_result is not None:
+        return checker_result
+
     return make_result(
-        'WRONG_ANSWER',
+        'ACCEPTED',
         0,
         elapsed,
-        0,
-        'Wrong answer',
+        None,
+        '',
     )
 
 
@@ -523,6 +737,8 @@ def process_job(job):
         'cpp',
         'c++',
         'g++',
+        'sh',
+        'bash',
     ):
         raise RuntimeError(
             'Unsupported compiler: {}'.format(
@@ -620,14 +836,32 @@ def process_job(job):
                     test['time_limit'],
                     test['memory_limit'],
                 )
+            elif compiler in (
+                'sh',
+                'bash',
+            ):
+                checker_res_id = solution.get('checker_resource_id')
+                checker_path = fetch_resource(checker_res_id) if checker_res_id else None
 
+                result = run_sh_test(
+                    solution_path,
+                    input_path,
+                    expected_path,
+                    test['time_limit'],
+                    test['memory_limit'],
+                    checker_path=checker_path,
+                )
             else:
+                checker_res_id = solution.get('checker_resource_id')
+                checker_path = fetch_resource(checker_res_id) if checker_res_id else None
+
                 result = run_cpp_test(
                     cpp_executable,
                     input_path,
                     expected_path,
                     test['time_limit'],
                     test['memory_limit'],
+                    checker_path=checker_path,
                 )
 
             result['test_id'] = test['id']
