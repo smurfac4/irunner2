@@ -1,9 +1,15 @@
-Build the image:
-```
-$ docker build . -t irunner-worker
+# Original worker Docker image
+
+Build the image from this directory:
+
+```bash
+docker build . -t irunner-worker
 ```
 
-Explore the image:
+Open an interactive container for inspection:
+
+```bash
+docker run --rm -it irunner-worker
 ```
-$ docker run -i -t irunner-worker
-```
+
+This image belongs to the original worker setup. See [the worker README](../README.md) for configuration and startup instructions.

@@ -1,3 +1,7 @@
+# iRunner Unix worker
+
+Setup notes for the original judging worker. Commands below describe the legacy Linux deployment workflow.
+
 Create a user named `tester` and add him to the `docker` group.
 ```
 sudo useradd -r tester
@@ -17,7 +21,7 @@ tester : tester docker
 
 Put the source code somewhere.
 ```
-$ git clone git@bitbucket.org:sobols/irunner2.git
+$ git clone https://github.com/smurfac4/irunner2.git
 $ cd irunner2/
 $ git pull
 $ cd ..

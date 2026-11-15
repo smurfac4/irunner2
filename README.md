@@ -1,84 +1,84 @@
-# Insight Runner 2 #
+<p align="center"><img src="https://raw.githubusercontent.com/smurfac4/irunner2/master/docs/images/overview.svg" alt="iRunner 2 workflow: prepare problems, submit solutions, evaluate results" width="100%"></p>
 
-## Overview ##
+# iRunner 2 · Programming courses & automated judging
 
-iRunner 2 is a course and contest management system that is used at Belarusian State University. It is designed to store an archive of algorithmic problems and perform automatic testing of solutions submitted by students.
+A customized version of **Insight Runner 2**, a Django platform for teaching programming and running algorithmic contests. Teachers manage problems, test data and courses; students submit solutions and receive automated judging results.
 
-## Development ##
+This repository builds on the original iRunner2 project by Sergei Sobol and its contributors, developed for use at Belarusian State University. The original authorship and Git history are preserved. The work by **smurfac4** extends that platform rather than replacing its provenance.
 
-### Cloning the repository ###
+## Platform capabilities
 
-On UNIX-like systems, this is done with git:
+- A problem archive with statements, test cases and judging settings.
+- Courses, contests, submissions, standings and feedback.
+- Worker-based execution of submitted programs and storage of results.
+- User and group administration, authentication and two-factor authentication.
+- Plagiarism review tools and submission source inspection.
 
-    sobols@magellan:~$ git clone git@bitbucket.org:sobols/irunner2.git
-    sobols@magellan:~$ cd irunner2
+## Custom work in this repository
 
-### Setting up the environment ###
+| Change | Implementation | Branch |
+| --- | --- | --- |
+| Dark theme | Theme controls in the base layout and user profile | Both branches |
+| Docker worker | A separate simple worker and API endpoints for taking jobs and reporting results | `master` |
+| Bash and Python checks | Additional execution and checker handling in the simple worker, including Python test-function harnesses | `master` |
+| Judging presentation | Changes to the displayed test numbering | `master` |
+| Plagiarism review | A plagiarism flag on submissions, review actions and source/results presentation | `master` |
+| Google Sheets export | Apps Script and browser-console helpers for importing course standings | `master` |
+| Model migrations | Additional migrations for model changes in the main branch | `master` |
+| Single active session | Session-key tracking, login/logout hooks, middleware and user-facing messages | `single-session` |
 
-Ensure that Python 3 is installed. iRunner is tested with Python 3.6+. 64-bit version is recommended. Python 2 is not supported: the compatibility was broken on 1 Feb 2020 (because Django has dropped its support).
+These entries describe changes visible in the source and commit history; they are not a claim that every deployment or platform combination has been validated.
 
-You will also need pip and virtualenv tools. Follow official guides to set them up. pip is shipped together with recent Python distributions downloaded from python.org. Then, virtualenv is installed with pip:
+## Branch guide
 
-    $ [sudo] pip install virtualenv
+| Branch | Purpose |
+| --- | --- |
+| [`master`](https://github.com/smurfac4/irunner2/tree/master) | Main development branch with the worker, judging, plagiarism and Google Sheets changes |
+| [`single-session`](https://github.com/smurfac4/irunner2/tree/single-session) | Separate session-management branch based on an earlier revision; it does not contain all later `master` changes |
 
-Please update pip if it says it has newer version.
+**You are viewing `single-session`.** This branch records one active Django session key per user. A login updates the stored key; middleware logs out a request using a different session key and displays a message. The implementation uses session keys, not IP-address matching. It also includes session-model migrations and message rendering in the base layout.
 
-Now create a new virtual environment and activate it.
+Review and test this behavior before deployment. This branch is based on an earlier version of the project and should not be treated as a copy of the current `master` branch.
 
-On UNIX-like systems:
+## Repository map
 
-    sobols@magellan:~/irunner2$ virtualenv venv
-    sobols@magellan:~/irunner2$ source venv/bin/activate
-    (venv)sobols@magellan:~/irunner2$
+| Path | Contents |
+| --- | --- |
+| `project/irunner2/middleware.py` | Active-session enforcement |
+| `project/users/models.py` | Session model and authentication hooks |
+| `project/users/migrations/` | User-model migrations |
+| `project/api/migrations/` | API migrations, including a session-model migration |
+| `project/templates/base.html` | Base layout, theme and session messages |
+| `irunner-unix-worker/` | Original judging worker |
+| `requirements.txt` | Web application dependencies |
 
-On Windows:
+## Local development
 
-    C:\work\irunner2>virtualenv venv
-    C:\work\irunner2>venv\Scripts\activate.bat
-    (venv) C:\work\irunner2>
+The web application uses a legacy dependency stack, including **Django 3.1.2**. Use an isolated development environment and review dependency compatibility before installation. Production readiness and a fresh installation have not been validated as part of this README update.
 
-If you haven't added Python to your PATH environment variable, you may have to type full paths to pip and virtualenv (on Windows they are in `C:\Python\Scripts` directory). After activation, full paths are not required anymore.
+```bash
+git clone https://github.com/smurfac4/irunner2.git
+cd irunner2
+git checkout single-session
+python3 -m venv .venv
+source .venv/bin/activate
+python -m pip install -r requirements.txt
+export DJANGO_SETTINGS_MODULE=irunner2.settings_dev
+cd project
+python manage.py migrate
+python manage.py createsuperuser
+python manage.py runserver
+```
 
-### Installing dependencies ###
+On Windows, activate the environment with `.venv\Scripts\activate` and use `set DJANGO_SETTINGS_MODULE=irunner2.settings_dev` in Command Prompt. The dependency list includes `mysqlclient`, which may need native build tools and MySQL client headers even when the development configuration uses SQLite.
 
-On UNIX-like systems, you will probably have to build MySQL library from source, so please install Python development headers and MySQL client headers. Also you may need JPEG library in order to build Pillow module. Actual command may depend on your repository.
+The development server listens on `http://127.0.0.1:8000/`. Running the web application does not start a judge worker.
 
-    sobols@magellan:~$ sudo apt-get install python-dev libmysqlclient-dev libjpeg-dev
+## Worker and deployment notes
 
-Then, ask pip to install dependencies:
+- [Worker setup](irunner-unix-worker/README.md) explains the original worker and configuration.
+- [Worker image](irunner-unix-worker/vm/README.md) covers the original Docker image.
+- [Django configuration](project/irunner2/README.md) explains private production settings.
+- [IIS configuration](inetpub/README.md) covers the supplied Windows hosting files.
 
-    (venv)sobols@magellan:~/irunner2$ pip install -r requirements.txt
-
-On Windows, use the same command. It is expected that binary dependencies will be downloaded as pre-built wheels, so local Microsoft Visual Studio compiler is not required.
-
-    (venv) C:\work\irunner2>pip install -r requirements.txt
-
-### Running the server ###
-
-You need to set up DJANGO_SETTINGS_MODULE environment variable. It is used to switch between development and production config.
-
-On UNIX-like systems:
-
-    (venv)sobols@magellan:~/irunner2$ export DJANGO_SETTINGS_MODULE=irunner2.settings_dev
-
-On Windows:
-
-    (venv) C:\work\irunner2>set DJANGO_SETTINGS_MODULE=irunner2.settings_dev
-
-Now initialize the development database, create the first user and start the development server.
-
-On UNIX-like systems:
-
-    (venv)sobols@magellan:~/irunner2$ cd project
-    (venv)sobols@magellan:~/irunner2/project$ ./manage.py migrate
-    (venv)sobols@magellan:~/irunner2/project$ ./manage.py createsuperuser
-    (venv)sobols@magellan:~/irunner2/project$ ./manage.py runserver
-
-On Windows:
-
-    (venv) C:\work\irunner2>cd project
-    (venv) C:\work\irunner2\project>python manage.py migrate
-    (venv) C:\work\irunner2\project>python manage.py createsuperuser
-    (venv) C:\work\irunner2\project>python manage.py runserver
-
-By default, the server starts on port 8000. Open your browser and check.
+Keep production secrets outside Git. Submitted programs require an appropriately isolated judging environment. Review the legacy dependencies, worker configuration and deployment settings before exposing an installation publicly.
