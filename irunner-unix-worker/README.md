@@ -1,3 +1,7 @@
+# iRunner Unix worker
+
+Setup notes for the original judging worker. Commands below describe the legacy Linux deployment workflow.
+
 Create a user named `tester` and add him to the `docker` group.
 ```
 sudo useradd -r tester
@@ -17,7 +21,7 @@ tester : tester docker
 
 Put the source code somewhere.
 ```
-$ git clone git@bitbucket.org:sobols/irunner2.git
+$ git clone https://github.com/smurfac4/irunner2.git
 $ cd irunner2/
 $ git pull
 $ cd ..
@@ -78,3 +82,9 @@ YYYY-MM-DD hh:mm:ss INFO Hello, Sir! It's test server.
 YYYY-MM-DD hh:mm:ss DEBUG Starting new HTTP connection (1): acm.bsu.by:80
 YYYY-MM-DD hh:mm:ss INFO Nothing to test
 ```
+
+## Additional simple worker on master
+
+`simple_worker.py` is a separate implementation added in this repository. It reads `config.ini` from the current working directory, uses a `Worker-Token` header to access the additional API endpoints, and executes checks through Docker. Its image definition is in `simple-runner/Dockerfile`.
+
+This worker includes Bash execution and Python checker handling. It is distinct from the original `main.py` worker described above; review its configuration and supported job formats before choosing which worker to run. The `requests` and Docker Python packages are worker dependencies and are not a substitute for the web application's requirements.

@@ -1,11 +1,12 @@
-Слева в меню Apps Script нажми на шестеренку ⚙️ (Настройки проекта).
+Google Sheets integration: script properties
 
-Прокрути в самый низ до «Свойства скрипта» (Script Properties).
+This setup applies to google_sheets_maincode.txt, the Google Apps Script standings importer.
 
-Нажми «Добавить свойство» и создай два свойства:
+1. Open the Apps Script project attached to your spreadsheet.
+2. Select Project Settings (the gear icon) in the left sidebar.
+3. Scroll to Script Properties and select Add script property.
+4. Add USERNAME with your own account login.
+5. Add PASSWORD with your own account password.
+6. Save the script properties.
 
-Свойство: USERNAME, Значение: твой реальный логин
-
-Свойство: PASSWORD, Значение: твой реальный пароль
-
-Нажми «Сохранить свойства скрипта».
+Configure BASE_URL and STANDINGS_URL in the script for your own installation and course. Do not commit credentials or share the Apps Script project with people who should not have access to them. This README does not configure or execute the integration.

@@ -1,5 +1,11 @@
-To run in production.
+# Django configuration and production settings
 
-* Ensure that you have _settings_prod_private.py_ file that contains `SECRET_KEY`, `WORKER_TOKEN`, `EMAIL_HOST_PASSWORD`, etc. variables. Use _settings_prod_private_sample.py_ as a template to create your own secret file. Never commit it to the repository.
+For local development, explicitly select `irunner2.settings_dev` as the `DJANGO_SETTINGS_MODULE`; see [the main README](../../README.md).
 
-* In _settings_common.py_, at the last line, set proper _customized_for_..._ import.
+For production:
+
+1. Create a private `settings_prod_private.py` using `settings_prod_private_sample.py` as a template. Supply your own `SECRET_KEY`, `WORKER_TOKEN`, `EMAIL_HOST_PASSWORD` and other required values. Never commit this private file.
+2. Review the institution-specific `customized_for_...` import at the end of `settings_common.py` and select the configuration appropriate to your installation.
+3. Review the production database, storage, email, allowed-host and worker settings before deployment.
+
+These are configuration notes, not a claim that the legacy stack is ready for a new production deployment.

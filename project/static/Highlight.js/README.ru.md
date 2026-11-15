@@ -1,14 +1,19 @@
+<!-- English translation retained at this legacy filename to preserve existing paths. -->
+
 # Highlight.js
 
-Highlight.js — это подсветчик синтаксиса, написанный на JavaScript. Он работает
-и в браузере, и на сервере. Он работает с практически любой HTML разметкой, не
-зависит от каких-либо фреймворков и умеет автоматически определять язык.
+[![Build Status](https://travis-ci.org/isagalaev/highlight.js.svg?branch=master)](https://travis-ci.org/isagalaev/highlight.js)
 
+Highlight.js is a syntax highlighter written in JavaScript. It works in
+the browser as well as on the server. It works with pretty much any
+markup, doesn’t depend on any framework and has automatic language
+detection.
 
-## Начало работы
+## Getting Started
 
-Минимум, что нужно сделать для использования highlight.js на веб-странице — это
-подключить библиотеку, CSS-стили и вызывать [`initHighlightingOnLoad`][1]:
+The bare minimum for using highlight.js on a web page is linking to the
+library along with one of the styles and calling
+[`initHighlightingOnLoad`][1]:
 
 ```html
 <link rel="stylesheet" href="/path/to/styles/default.css">
@@ -16,31 +21,32 @@ Highlight.js — это подсветчик синтаксиса, написа�
 <script>hljs.initHighlightingOnLoad();</script>
 ```
 
-Библиотека найдёт и раскрасит код внутри тегов `<pre><code>`, попытавшись
-автоматически определить язык. Когда автоопределение не срабатывает, можно явно
-указать язык в атрибуте class:
+This will find and highlight code inside of `<pre><code>` tags; it tries
+to detect the language automatically. If automatic detection doesn’t
+work for you, you can specify the language in the `class` attribute:
 
 ```html
 <pre><code class="html">...</code></pre>
 ```
 
-Список поддерживаемых классов языков доступен в [справочнике по классам][8].
-Класс также можно предваоить префиксами `language-` или `lang-`.
+The list of supported language classes is available in the [class
+reference][2].  Classes can also be prefixed with either `language-` or
+`lang-`.
 
-Чтобы отключить подсветку для какого-то блока, используйте класс `nohighlight`:
+To disable highlighting altogether use the `nohighlight` class:
 
 ```html
 <pre><code class="nohighlight">...</code></pre>
 ```
 
-## Инициализация вручную
+## Custom Initialization
 
-Чтобы иметь чуть больше контроля за инициализацией подсветки, вы можете
-использовать функции [`highlightBlock`][2] и [`configure`][3]. Таким образом
-можно управлять тем, *что* подсвечивать и *когда*.
+When you need a bit more control over the initialization of
+highlight.js, you can use the [`highlightBlock`][3] and [`configure`][4]
+functions. This allows you to control *what* to highlight and *when*.
 
-Вот пример инициализация, эквивалентной вызову [`initHighlightingOnLoad`][1], но
-с использованием jQuery:
+Here’s an equivalent way to calling [`initHighlightingOnLoad`][1] using
+jQuery:
 
 ```javascript
 $(document).ready(function() {
@@ -50,9 +56,9 @@ $(document).ready(function() {
 });
 ```
 
-Вы можете использовать любые теги разметки вместо `<pre><code>`. Если
-используете контейнер, не сохраняющий переводы строк, вам нужно сказать
-highlight.js использовать для них тег `<br>`:
+You can use any tags instead of `<pre><code>` to mark up your code. If
+you don't use a container that preserve line breaks you will need to
+configure highlight.js to use the `<br>` tag:
 
 ```javascript
 hljs.configure({useBR: true});
@@ -62,15 +68,15 @@ $('div.code').each(function(i, block) {
 });
 ```
 
-Другие опции можно найти в документации функции [`configure`][3].
+For other options refer to the documentation for [`configure`][4].
 
 
 ## Web Workers
 
-Подсветку можно запустить внутри web worker'а, чтобы не подвешивать окно
-браузера при работе с большими кусками кода.
+You can run highlighting inside a web worker to avoid freezing the browser
+window while dealing with very big chunks of code.
 
-В основном скрипте:
+In your main script:
 
 ```javascript
 addEventListener('load', function() {
@@ -81,7 +87,7 @@ addEventListener('load', function() {
 })
 ```
 
-В worker.js:
+In worker.js:
 
 ```javascript
 onmessage = function(event) {
@@ -92,37 +98,39 @@ onmessage = function(event) {
 ```
 
 
-## Установка библиотеки
+## Getting the Library
 
-Highlight.js можно использовать в браузере прямо с CDN хостинга или скачать
-индивидуальную сборку, а также установив модуль на сервере. На
-[страница загрузки][4] подробно описаны все варианты.
+You can get highlight.js as a hosted, or custom-build, browser script or
+as a server module. Right out of the box the browser script supports
+both AMD and CommonJS, so if you wish you can use RequireJS or
+Browserify without having to build from source. The server module also
+works perfectly fine with Browserify, but there is the option to use a
+build specific to browsers rather than something meant for a server.
+Head over to the [download page][5] for all the options.
 
-Обратите внимание, что библиотека не предназначена для использования в виде
-исходного кода на GitHub, а требует отдельной сборки. Если вам не подходит ни
-один из готовых вариантов, читайте [документацию по сборке][5].
+**Note:** the library is not supposed to work straight from the source
+on GitHub; it requires building. If none of the pre-packaged options
+work for you refer to the [building documentation][6].
 
+## License
 
-## Лицензия
+Highlight.js is released under the BSD License. See [LICENSE][7] file
+for details.
 
-Highlight.js распространяется под лицензией BSD. Подробнее читайте файл
-[LICENSE][10].
+## Links
 
+The official site for the library is at <https://highlightjs.org/>.
 
-## Ссылки
-
-Официальный сайт билиотеки расположен по адресу <https://highlightjs.org/>.
-
-Более подробная документация по API и другим темам расположена на
+Further in-depth documentation for the API and other topics is at
 <http://highlightjs.readthedocs.org/>.
 
-Авторы и контрибьютора перечислена в файле [AUTHORS.ru.txt][9] file.
+Authors and contributors are listed in the [AUTHORS.en.txt][8] file.
 
 [1]: http://highlightjs.readthedocs.org/en/latest/api.html#inithighlightingonload
-[2]: http://highlightjs.readthedocs.org/en/latest/api.html#highlightblock-block
-[3]: http://highlightjs.readthedocs.org/en/latest/api.html#configure-options
-[4]: https://highlightjs.org/download/
-[5]: http://highlightjs.readthedocs.org/en/latest/building-testing.html
-[8]: http://highlightjs.readthedocs.org/en/latest/css-classes-reference.html
-[9]: https://github.com/isagalaev/highlight.js/blob/master/AUTHORS.ru.txt
-[10]: https://github.com/isagalaev/highlight.js/blob/master/LICENSE
+[2]: http://highlightjs.readthedocs.org/en/latest/css-classes-reference.html
+[3]: http://highlightjs.readthedocs.org/en/latest/api.html#highlightblock-block
+[4]: http://highlightjs.readthedocs.org/en/latest/api.html#configure-options
+[5]: https://highlightjs.org/download/
+[6]: http://highlightjs.readthedocs.org/en/latest/building-testing.html
+[7]: https://github.com/isagalaev/highlight.js/blob/master/LICENSE
+[8]: https://github.com/isagalaev/highlight.js/blob/master/AUTHORS.en.txt
